@@ -1,7 +1,41 @@
 import 'package:flutter/material.dart';
 
+import 'screens/Homescreen.dart';
+
 void main() {
-  runApp(const MyApp());
+  runApp(const Swiggy1());
+}
+
+class Swiggy extends StatelessWidget {
+  const Swiggy({super.key});
+  @override
+  Widget build(BuildContext context) {
+    // TODO: implement build
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrange),
+        useMaterial3: true,
+      ),
+      home: HomeScreen(),
+    );
+  }
+}
+
+class Swiggy1 extends StatelessWidget {
+  const Swiggy1({super.key});
+  @override
+  Widget build(BuildContext context) {
+    // TODO: implement build
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrange),
+        useMaterial3: true,
+      ),
+      home: HomeScreen1(),
+    );
+  }
 }
 
 class MyApp extends StatelessWidget {
