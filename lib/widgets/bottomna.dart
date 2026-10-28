@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 class BottomNavBar extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onItemSelected;
+  // ABOVE ONE IS THE FUNCTION WHICH SAY THE
 
   const BottomNavBar({
     super.key,

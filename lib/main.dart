@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
 
 import 'screens/Homescreen.dart';
+import 'screens/Mainpage.dart';
+
+import 'package:sideproject/widgets/Trailup.dart';
+
+// import 'package:sideproject/widgets/';
 
 void main() {
-  runApp(const Swiggy1());
+  runApp(const Swiggy12());
+  // runApp(const Trailpart());
+  // runApp(const  )
 }
 
 class Swiggy extends StatelessWidget {
@@ -34,6 +41,41 @@ class Swiggy1 extends StatelessWidget {
         useMaterial3: true,
       ),
       home: HomeScreen1(),
+    );
+  }
+}
+
+class Swiggy12 extends StatelessWidget {
+  const Swiggy12({super.key});
+  @override
+  Widget build(BuildContext context) {
+    // TODO: implement build
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrange),
+        useMaterial3: true,
+      ),
+      // home: HomeScreen1(),
+      home: MainScreen(),
+    );
+  }
+}
+
+class Trailpart extends StatelessWidget {
+  const Trailpart({super.key});
+  @override
+  Widget build(BuildContext context) {
+    // TODO: implement build
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrange),
+        useMaterial3: true,
+      ),
+      // home: Banner(),
+      home: Banners(),
+      // home: HomeScreen1(),
     );
   }
 }

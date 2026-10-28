@@ -40,6 +40,7 @@ class FoodCategories extends StatelessWidget {
                   backgroundColor: category['color'] as Color,
                   child: Icon(
                     category['icon'] as IconData,
+                    // Icondata what it is ??what does it states
                     size: 30,
                     color: Colors.deepOrange,
                   ),

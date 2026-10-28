@@ -41,7 +41,7 @@ class HomeScreen1 extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen1> {
-  int selectedIndex = 0;
+  // int selectedIndex = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -115,18 +115,27 @@ class _HomeScreenState extends State<HomeScreen1> {
                 offer: 'Up to 40% OFF',
                 foodIcon: Icons.breakfast_dining,
               ),
+              const RestaurantCard(
+                name: 'CAKE AND BAKE',
+                cuisines: 'CAKE',
+                rating: '4.5',
+                deliveryTime: '20–30 mins',
+                price: '₹200 for two',
+                offer: 'Up to 40% OFF',
+                foodIcon: Icons.cake_rounded,
+              ),
             ],
           ),
         ),
       ),
-      bottomNavigationBar: BottomNavBar(
-        selectedIndex: selectedIndex,
-        onItemSelected: (index) {
-          setState(() {
-            selectedIndex = index;
-          });
-        },
-      ),
+      // bottomNavigationBar: BottomNavBar(
+      //   selectedIndex: selectedIndex,
+      //   onItemSelected: (index) {
+      //     setState(() {
+      //       selectedIndex = index;
+      //     });
+      //   },
+      // ),
     );
   }
 }
