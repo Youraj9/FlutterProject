@@ -6,7 +6,8 @@ import 'package:sideproject/widgets/foodcategor.dart';
 // import 'package:flutter/material.dart';
 import 'package:sideproject/widgets/promotional.dart';
 import 'package:sideproject/widgets/restuarnt.dart';
-import 'package:sideproject/widgets/bottomna.dart';
+
+// import 'package:sideproject/widgets/bottomna.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});

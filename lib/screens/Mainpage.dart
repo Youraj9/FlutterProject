@@ -20,7 +20,9 @@ class _MainScreenState extends State<MainScreen> {
   final List<Widget> pages = const [
     HomeScreen1(),
     SearchScreen(),
-    CartScreen(),
+    Cardscreen1(),
+    // OrdersScreen(),
+    // Orderscreen(),
     OrdersScreen(),
   ];
 

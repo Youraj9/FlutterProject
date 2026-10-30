@@ -64,6 +64,7 @@ class Customcusine extends StatelessWidget {
       width: 76,
       child: Material(
         color: Colors.transparent,
+        //what does the color here means for . and here why it has given like this
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(16),
@@ -71,6 +72,7 @@ class Customcusine extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 4),
             decoration: BoxDecoration(
               color: isSelected ? const Color(0xFFFFF5EF) : Colors.white,
+              // what does it do here what do it means
               border: Border.all(
                 color: isSelected ? Colors.deepOrange : const Color(0xFFE7ECF2),
               ),

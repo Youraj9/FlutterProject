@@ -9,7 +9,7 @@ class Search extends StatelessWidget {
       decoration: InputDecoration(
         hintText: 'Search for restaurants, cuisines or dishes...',
         hintStyle: const TextStyle(color: Colors.grey, fontSize: 14),
-        prefix: Icon(Icons.search, color: Colors.grey),
+        prefixIcon: Icon(Icons.search, color: Colors.grey),
         filled: true,
         // filled: true,
         fillColor: const Color(0xFFF7F7F7),
