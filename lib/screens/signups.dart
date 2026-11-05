@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sideproject/utils/formvalidate.dart';
 
 void main() {
   runApp(const MaterialApp(home: Signup(), debugShowCheckedModeBanner: false));
@@ -175,18 +176,19 @@ class _SignupState extends State<Signup> {
                         icon: Icons.email_outlined,
                       ),
 
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Please enter your email';
-                        }
+                      // validator: (value) {
+                      //   if (value == null || value.trim().isEmpty) {
+                      //     return 'Please enter your email';
+                      //   }
 
-                        if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
-                            .hasMatch(value.trim())) {
-                          return 'Please enter a valid email';
-                        }
+                      //   if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
+                      //       .hasMatch(value.trim())) {
+                      //     return 'Please enter a valid email';
+                      //   }
 
-                        return null;
-                      },
+                      //   return null;
+                      // },
+                      validator: FormValidators.validateEmail,
                     ),
 
                     const SizedBox(height: 18),
@@ -430,6 +432,24 @@ class _SignupState extends State<Signup> {
                               color: Color(0xFFFF5A1F),
                               fontWeight: FontWeight.w600,
                             ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          "Don't have an account? ",
+                          style: TextStyle(color: Colors.orange),
+                        ),
+                        // TextButton(onPressed: null,)
+                        TextButton(
+                          onPressed: null,
+                          child: Text(
+                            "Sign up",
+                            style: TextStyle(color: Colors.orange),
                           ),
                         ),
                       ],
