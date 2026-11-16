@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
@@ -23,48 +24,76 @@ class AuthResult {
 }
 
 class AuthService {
+  static const Duration _timeout = Duration(seconds: 15);
+
+  // =========================
   // SIGNUP
+  // =========================
+
   Future<AuthResult> signup({
     required String name,
     required String email,
     required String password,
   }) async {
-    final response = await http
-        .post(
-          Uri.parse(ApiConfig.signup),
+    try {
+      final response = await http
+          .post(
+            Uri.parse(ApiConfig.signup),
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: jsonEncode({
+              'name': name.trim(),
+              'email': email.trim().toLowerCase(),
+              'password': password,
+            }),
+          )
+          .timeout(_timeout);
 
-          headers: {'Content-Type': 'application/json'},
-
-          body: jsonEncode({
-            'name': name.trim(),
-            'email': email.trim(),
-            'password': password,
-          }),
-        )
-        .timeout(const Duration(seconds: 15));
-
-    return _handleAuthResponse(response);
+      return await _handleAuthResponse(response);
+    } on TimeoutException {
+      throw AuthException('Request timed out. Please try again.');
+    } on http.ClientException {
+      throw AuthException('Unable to connect to the server.');
+    }
   }
 
+  // =========================
   // LOGIN
+  // =========================
+
   Future<AuthResult> login({
     required String email,
     required String password,
   }) async {
-    final response = await http
-        .post(
-          Uri.parse(ApiConfig.login),
+    try {
+      final response = await http
+          .post(
+            Uri.parse(ApiConfig.login),
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: jsonEncode({
+              'email': email.trim().toLowerCase(),
+              'password': password,
+            }),
+          )
+          .timeout(_timeout);
 
-          headers: {'Content-Type': 'application/json'},
-
-          body: jsonEncode({'email': email.trim(), 'password': password}),
-        )
-        .timeout(const Duration(seconds: 15));
-
-    return _handleAuthResponse(response);
+      return await _handleAuthResponse(response);
+    } on TimeoutException {
+      throw AuthException('Request timed out. Please try again.');
+    } on http.ClientException {
+      throw AuthException('Unable to connect to the server.');
+    }
   }
 
-  // GET CURRENT LOGGED-IN USER
+  // =========================
+  // GET CURRENT USER
+  // =========================
+
   Future<AuthUser> getCurrentUser() async {
     final token = await TokenStorage.getToken();
 
@@ -72,43 +101,51 @@ class AuthService {
       throw AuthException('Please log in again.');
     }
 
-    final response = await http
-        .get(
-          Uri.parse(ApiConfig.me),
+    try {
+      final response = await http
+          .get(
+            Uri.parse(ApiConfig.me),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Accept': 'application/json',
+            },
+          )
+          .timeout(_timeout);
 
-          headers: {
-            'Authorization': 'Bearer $token',
-            'Content-Type': 'application/json',
-          },
-        )
-        .timeout(const Duration(seconds: 15));
+      final body = _decodeResponse(response);
 
-    final body = _decodeResponse(response);
+      if (response.statusCode == 401) {
+        await TokenStorage.deleteToken();
+        throw AuthException('Your session has expired. Please log in again.');
+      }
 
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw AuthException(
-        body['message']?.toString() ?? 'Unable to fetch user information.',
-      );
+      if (!_isSuccessful(response, body)) {
+        throw AuthException(_errorMessage(body));
+      }
+
+      final data = _asMap(body['data']);
+
+      return AuthUser.fromJson(data);
+    } on TimeoutException {
+      throw AuthException('Request timed out. Please try again.');
+    } on http.ClientException {
+      throw AuthException('Unable to connect to the server.');
     }
-
-    final data = _asMap(body['data']);
-
-    return AuthUser.fromJson(data);
   }
 
-  // COMMON AUTH RESPONSE HANDLER
+  // =========================
+  // COMMON AUTH RESPONSE
+  // =========================
+
   Future<AuthResult> _handleAuthResponse(http.Response response) async {
     final body = _decodeResponse(response);
 
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw AuthException(
-        body['message']?.toString() ?? 'Authentication failed.',
-      );
+    if (!_isSuccessful(response, body)) {
+      throw AuthException(_errorMessage(body));
     }
 
     final data = _asMap(body['data']);
 
-    // Supports data.token or data.accessToken.
     final token =
         (data['token'] ??
                 data['accessToken'] ??
@@ -120,8 +157,6 @@ class AuthService {
       throw AuthException('The server did not return an authentication token.');
     }
 
-    // Some APIs return data.user.
-    // Others return the user fields directly inside data.
     final userData = data['user'] is Map ? _asMap(data['user']) : data;
 
     final user = AuthUser.fromJson(userData);
@@ -130,33 +165,62 @@ class AuthService {
       throw AuthException('The server returned incomplete user information.');
     }
 
-    // Store token securely.
     await TokenStorage.saveToken(token);
 
     return AuthResult(user: user, token: token);
   }
 
-  // DECODE JSON RESPONSE
+  // =========================
+  // RESPONSE STATUS
+  // =========================
+
+  bool _isSuccessful(http.Response response, Map<String, dynamic> body) {
+    return response.statusCode >= 200 &&
+        response.statusCode < 300 &&
+        body['success'] != false;
+  }
+
+  // =========================
+  // ERROR MESSAGE
+  // =========================
+
+  String _errorMessage(Map<String, dynamic> body) {
+    return body['message']?.toString() ??
+        body['error']?.toString() ??
+        'Something went wrong. Please try again.';
+  }
+
+  // =========================
+  // DECODE JSON
+  // =========================
+
   Map<String, dynamic> _decodeResponse(http.Response response) {
+    if (response.body.trim().isEmpty) {
+      return {};
+    }
+
     try {
       final decoded = jsonDecode(response.body);
 
-      if (decoded is Map<String, dynamic>) {
-        return decoded;
+      if (decoded is Map) {
+        return Map<String, dynamic>.from(decoded);
       }
 
       throw AuthException('Invalid server response.');
     } on FormatException {
-      throw AuthException('Server returned invalid JSON.');
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        throw AuthException('Server returned invalid JSON.');
+      }
+
+      return {};
     }
   }
 
-  // SAFELY CONVERT JSON MAP
-  Map<String, dynamic> _asMap(dynamic value) {
-    if (value is Map<String, dynamic>) {
-      return value;
-    }
+  // =========================
+  // SAFE MAP CONVERSION
+  // =========================
 
+  Map<String, dynamic> _asMap(dynamic value) {
     if (value is Map) {
       return Map<String, dynamic>.from(value);
     }
@@ -164,7 +228,10 @@ class AuthService {
     throw AuthException('Invalid response data.');
   }
 
+  // =========================
   // LOGOUT
+  // =========================
+
   Future<void> logout() async {
     await TokenStorage.deleteToken();
   }

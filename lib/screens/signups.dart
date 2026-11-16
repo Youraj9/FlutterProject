@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sideproject/services/auth_service.dart';
 import 'package:sideproject/utils/formvalidate.dart';
 
 void main() {
@@ -19,11 +20,13 @@ class _SignupState extends State<Signup> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _authService = AuthService();
   // here we are hiding the elements of the signupstate
 
   bool isChecked = false;
   bool hidePassword = true;
   bool hideConfirmPassword = true;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -35,7 +38,9 @@ class _SignupState extends State<Signup> {
     super.dispose();
   }
 
-  void _createAccount() {
+  Future<void> _createAccount() async {
+    if (_isLoading) return;
+
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -50,8 +55,42 @@ class _SignupState extends State<Signup> {
       return;
     }
 
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text('Signup form is valid!')));
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await _authService.signup(
+        name: _nameController.text.trim(),
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Account created successfully. Please log in.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Navigator.pushReplacementNamed(context, '/login');
+    } catch (error) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   String? _validateName(String? value) {
@@ -283,11 +322,13 @@ class _SignupState extends State<Signup> {
                     CheckboxListTile(
                       value: isChecked,
 
-                      onChanged: (value) {
-                        setState(() {
-                          isChecked = value ?? false;
-                        });
-                      },
+                      onChanged: _isLoading
+                          ? null
+                          : (value) {
+                              setState(() {
+                                isChecked = value ?? false;
+                              });
+                            },
 
                       controlAffinity: ListTileControlAffinity.leading,
 
@@ -313,7 +354,7 @@ class _SignupState extends State<Signup> {
                       height: 50,
 
                       child: FilledButton(
-                        onPressed: _createAccount,
+                        onPressed: _isLoading ? null : _createAccount,
 
                         style: FilledButton.styleFrom(
                           backgroundColor: const Color(0xFFFF5A1F),
@@ -325,14 +366,22 @@ class _SignupState extends State<Signup> {
                           ),
                         ),
 
-                        child: const Text(
-                          'Create account',
-
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                height: 22,
+                                width: 22,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text(
+                                'Create account',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                       ),
                     ),
 
@@ -417,13 +466,12 @@ class _SignupState extends State<Signup> {
                         ),
 
                         TextButton(
-                          onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Login screen not connected yet'),
-                              ),
-                            );
-                          },
+                          onPressed: _isLoading
+                              ? null
+                              : () => Navigator.pushReplacementNamed(
+                                  context,
+                                  '/login',
+                                ),
 
                           child: const Text(
                             'Log in',
@@ -432,24 +480,6 @@ class _SignupState extends State<Signup> {
                               color: Color(0xFFFF5A1F),
                               fontWeight: FontWeight.w600,
                             ),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          "Don't have an account? ",
-                          style: TextStyle(color: Colors.orange),
-                        ),
-                        // TextButton(onPressed: null,)
-                        TextButton(
-                          onPressed: null,
-                          child: Text(
-                            "Sign up",
-                            style: TextStyle(color: Colors.orange),
                           ),
                         ),
                       ],

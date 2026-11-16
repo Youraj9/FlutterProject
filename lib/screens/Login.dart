@@ -54,8 +54,7 @@ class _LoginState extends State<Login> {
         ),
       );
 
-      // Later: Navigate to the FoodMood home page.
-      // Navigator.pushReplacementNamed(context, '/home');
+      Navigator.pushReplacementNamed(context, '/home');
     } catch (error) {
       if (!mounted) return;
 

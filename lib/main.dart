@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
 import 'screens/Homescreen.dart';
+import 'screens/landing.dart';
+import 'screens/Login.dart';
 import 'screens/Mainpage.dart';
+import 'screens/signups.dart';
 
 import 'package:sideproject/widgets/Trailup.dart';
 
@@ -56,8 +59,13 @@ class Swiggy12 extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrange),
         useMaterial3: true,
       ),
-      // home: HomeScreen1(),
-      home: MainScreen(),
+      home: const Landing(),
+      routes: {
+        '/landing': (context) => const Landing(),
+        '/login': (context) => const Login(),
+        '/signup': (context) => const Signup(),
+        '/home': (context) => const MainScreen(),
+      },
     );
   }
 }
