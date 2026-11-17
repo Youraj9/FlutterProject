@@ -60,7 +60,7 @@ class _SignupState extends State<Signup> {
     });
 
     try {
-      await _authService.signup(
+      final result = await _authService.signup(
         name: _nameController.text.trim(),
         email: _emailController.text.trim(),
         password: _passwordController.text,
@@ -70,11 +70,11 @@ class _SignupState extends State<Signup> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Account created successfully. Please log in.'),
+          content: Text('Account created successfully.'),
           backgroundColor: Colors.green,
         ),
       );
-      Navigator.pushReplacementNamed(context, '/login');
+      Navigator.pushReplacementNamed(context, '/home', arguments: result.user);
     } catch (error) {
       if (!mounted) return;
 

@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:sideproject/models/restaurant.dart';
+import 'package:sideproject/models/auth_user.dart';
+import 'package:sideproject/screens/Resdetails.dart';
+import 'package:sideproject/services/restaurant_service.dart';
 import 'package:sideproject/widgets/location.dart';
 import 'package:sideproject/widgets/search.dart';
 import 'package:sideproject/widgets/foodsection.dart';
@@ -35,14 +39,28 @@ class HomeScreen extends StatelessWidget {
 }
 
 class HomeScreen1 extends StatefulWidget {
-  const HomeScreen1({super.key});
+  const HomeScreen1({super.key, this.user, this.onLogout});
+
+  final AuthUser? user;
+  final Future<void> Function()? onLogout;
 
   @override
   State<HomeScreen1> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen1> {
-  // int selectedIndex = 0;
+  final _restaurantService = RestaurantService();
+  late Future<List<Restaurant>> _restaurantsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRestaurants();
+  }
+
+  void _loadRestaurants() {
+    _restaurantsFuture = _restaurantService.fetchRestaurants();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +71,7 @@ class _HomeScreenState extends State<HomeScreen1> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Location(),
+              Location(user: widget.user, onLogout: widget.onLogout),
 
               const SizedBox(height: 22),
 
@@ -69,62 +87,7 @@ class _HomeScreenState extends State<HomeScreen1> {
 
               const SizedBox(height: 24),
 
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Expanded(
-                    child: Text(
-                      'Top Restaurants Near You',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  TextButton(onPressed: () {}, child: const Text('See all')),
-                ],
-              ),
-
-              const SizedBox(height: 8),
-
-              const RestaurantCard(
-                name: 'Biryani Paradise',
-                cuisines: 'Biryani • North Indian • Chinese',
-                rating: '4.4',
-                deliveryTime: '30–40 mins',
-                price: '₹250 for two',
-                offer: 'Up to 50% OFF',
-                foodIcon: Icons.rice_bowl,
-              ),
-
-              const RestaurantCard(
-                name: 'Burger Singh',
-                cuisines: 'Burgers • Fast Food',
-                rating: '4.3',
-                deliveryTime: '25–35 mins',
-                price: '₹300 for two',
-                offer: 'Flat 40% OFF',
-                foodIcon: Icons.lunch_dining,
-              ),
-
-              const RestaurantCard(
-                name: 'Dosa Plaza',
-                cuisines: 'South Indian • Fast Food',
-                rating: '4.5',
-                deliveryTime: '20–30 mins',
-                price: '₹200 for two',
-                offer: 'Up to 40% OFF',
-                foodIcon: Icons.breakfast_dining,
-              ),
-              const RestaurantCard(
-                name: 'CAKE AND BAKE',
-                cuisines: 'CAKE',
-                rating: '4.5',
-                deliveryTime: '20–30 mins',
-                price: '₹200 for two',
-                offer: 'Up to 40% OFF',
-                foodIcon: Icons.cake_rounded,
-              ),
+              _buildRestaurantSection(),
             ],
           ),
         ),
@@ -138,5 +101,100 @@ class _HomeScreenState extends State<HomeScreen1> {
       //   },
       // ),
     );
+  }
+
+  Widget _buildRestaurantSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Top Restaurants Near You',
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 8),
+        FutureBuilder<List<Restaurant>>(
+          future: _restaurantsFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState != ConnectionState.done) {
+              return const Padding(
+                padding: EdgeInsets.all(24),
+                child: Center(child: CircularProgressIndicator()),
+              );
+            }
+
+            if (snapshot.hasError) {
+              return Center(
+                child: Column(
+                  children: [
+                    Text(
+                      'Could not load restaurants: ${snapshot.error}',
+                      textAlign: TextAlign.center,
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        setState(_loadRestaurants);
+                      },
+                      child: const Text('Try again'),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            final restaurants = snapshot.data ?? const <Restaurant>[];
+            if (restaurants.isEmpty) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 20),
+                child: Center(child: Text('No restaurants are available yet.')),
+              );
+            }
+
+            return ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: restaurants.length,
+              separatorBuilder: (context, index) => const SizedBox(height: 8),
+              itemBuilder: (context, index) {
+                final restaurant = restaurants[index];
+                return RestaurantCard(
+                  name: restaurant.name,
+                  cuisines: restaurant.cuisines.isEmpty
+                      ? 'Restaurant'
+                      : restaurant.cuisines.join(' • '),
+                  rating: restaurant.rating.toStringAsFixed(1),
+                  deliveryTime: '${restaurant.deliveryTimeMinutes} min',
+                  price:
+                      '₹${restaurant.minimumOrder.toStringAsFixed(0)} min order',
+                  offer: restaurant.isOpen ? 'Open now' : 'Currently closed',
+                  foodIcon: _iconForRestaurant(restaurant),
+                  imageUrl: restaurant.imageUrl,
+                  isOpen: restaurant.isOpen,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute<void>(
+                        builder: (context) =>
+                            RestaurantDetailsScreen(restaurant: restaurant),
+                      ),
+                    );
+                  },
+                );
+              },
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  IconData _iconForRestaurant(Restaurant restaurant) {
+    final cuisines = restaurant.cuisines.join(' ').toLowerCase();
+    if (cuisines.contains('biryani')) return Icons.rice_bowl;
+    if (cuisines.contains('burger')) return Icons.lunch_dining;
+    if (cuisines.contains('pizza')) return Icons.local_pizza;
+    if (cuisines.contains('dessert') || cuisines.contains('cake')) {
+      return Icons.cake_rounded;
+    }
+    return Icons.restaurant;
   }
 }

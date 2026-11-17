@@ -1,9 +1,24 @@
 import 'package:flutter/material.dart';
-// import 'package:sideproject/utils/form_validators.dart';
+import 'package:sideproject/models/auth_user.dart';
+import 'package:sideproject/screens/Mainpage.dart';
+import 'package:sideproject/screens/landing.dart';
+import 'package:sideproject/services/auth_service.dart';
 import 'package:sideproject/utils/formvalidate.dart';
 
 void main() {
-  runApp(const MaterialApp(home: Login(), debugShowCheckedModeBanner: false));
+  runApp(
+    MaterialApp(
+      home: const Login(),
+      debugShowCheckedModeBanner: false,
+      routes: {
+        '/landing': (context) => const Landing(),
+        '/home': (context) {
+          final user = ModalRoute.of(context)?.settings.arguments;
+          return MainScreen(user: user is AuthUser ? user : null);
+        },
+      },
+    ),
+  );
 }
 
 class Login extends StatefulWidget {
@@ -20,9 +35,11 @@ class _LoginState extends State<Login> {
 
   // Form key
   final _formKey = GlobalKey<FormState>();
+  final _authService = AuthService();
 
   // Password visibility
   bool _hidePassword = true;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -33,16 +50,38 @@ class _LoginState extends State<Login> {
   }
 
   // Login validation
-  void _login() {
+  Future<void> _login() async {
+    if (_isLoading) return;
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Login form validated successfully!')),
-    );
+    setState(() {
+      _isLoading = true;
+    });
 
-    // Later we will connect the Node.js login API here.
+    try {
+      final result = await _authService.login(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(context, '/home', arguments: result.user);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   void _showNotImplemented(String feature) {
@@ -219,7 +258,7 @@ class _LoginState extends State<Login> {
                       height: 50,
 
                       child: FilledButton(
-                        onPressed: _login,
+                        onPressed: _isLoading ? null : _login,
 
                         style: FilledButton.styleFrom(
                           backgroundColor: const Color(0xFFFF5A1F),
@@ -230,13 +269,22 @@ class _LoginState extends State<Login> {
                           ),
                         ),
 
-                        child: const Text(
-                          'Log in',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                height: 22,
+                                width: 22,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text(
+                                'Log in',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                       ),
                     ),
 

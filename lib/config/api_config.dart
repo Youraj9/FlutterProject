@@ -8,5 +8,6 @@ class ApiConfig {
   static const String signup = '$baseUrl/auth/signup';
   static const String login = '$baseUrl/auth/login';
   static const String me = '$baseUrl/auth/me';
+  static const String restaurants = '$baseUrl/restaurants';
 }
 // configuration of the data here we are doing

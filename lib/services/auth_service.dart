@@ -124,8 +124,12 @@ class AuthService {
       }
 
       final data = _asMap(body['data']);
-
-      return AuthUser.fromJson(data);
+      final userData = data['user'] is Map ? _asMap(data['user']) : data;
+      final user = AuthUser.fromJson(userData);
+      if (user.id.isEmpty || user.email.isEmpty) {
+        throw AuthException('The server returned incomplete user information.');
+      }
+      return user;
     } on TimeoutException {
       throw AuthException('Request timed out. Please try again.');
     } on http.ClientException {
@@ -149,8 +153,12 @@ class AuthService {
     final token =
         (data['token'] ??
                 data['accessToken'] ??
+                data['access_token'] ??
+                data['jwt'] ??
                 body['token'] ??
-                body['accessToken'])
+                body['accessToken'] ??
+                body['access_token'] ??
+                body['jwt'])
             ?.toString();
 
     if (token == null || token.isEmpty) {

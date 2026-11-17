@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'models/auth_user.dart';
+import 'services/auth_service.dart';
+import 'services/token_storage.dart';
 import 'screens/Homescreen.dart';
 import 'screens/landing.dart';
 import 'screens/Login.dart';
@@ -59,12 +62,104 @@ class Swiggy12 extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrange),
         useMaterial3: true,
       ),
-      home: const Landing(),
+      home: const _SessionRestorer(),
       routes: {
         '/landing': (context) => const Landing(),
         '/login': (context) => const Login(),
         '/signup': (context) => const Signup(),
-        '/home': (context) => const MainScreen(),
+      },
+      onGenerateRoute: (settings) {
+        if (settings.name == '/home') {
+          final user = settings.arguments;
+          return MaterialPageRoute<void>(
+            settings: settings,
+            builder: (context) =>
+                MainScreen(user: user is AuthUser ? user : null),
+          );
+        }
+        return null;
+      },
+    );
+  }
+}
+
+class _SessionRestorer extends StatefulWidget {
+  const _SessionRestorer();
+
+  @override
+  State<_SessionRestorer> createState() => _SessionRestorerState();
+}
+
+class _SessionRestorerState extends State<_SessionRestorer> {
+  final _authService = AuthService();
+  Future<AuthUser?>? _restoreFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _restoreFuture = _restoreSession();
+  }
+
+  Future<AuthUser?> _restoreSession() async {
+    final token = await TokenStorage.getToken();
+    if (token == null || token.isEmpty) return null;
+    try {
+      return await _authService.getCurrentUser();
+    } on AuthException {
+      final savedToken = await TokenStorage.getToken();
+      if (savedToken == null || savedToken.isEmpty) return null;
+      rethrow;
+    }
+  }
+
+  void _retry() {
+    setState(() {
+      _restoreFuture = _restoreSession();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<AuthUser?>(
+      future: _restoreFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (snapshot.hasError) {
+          return Scaffold(
+            body: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Could not restore your session. Check your connection '
+                      'and try again.',
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    FilledButton(onPressed: _retry, child: const Text('Retry')),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pushReplacementNamed(context, '/login');
+                      },
+                      child: const Text('Go to login'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+
+        final user = snapshot.data;
+        if (user == null) return const Landing();
+        return MainScreen(user: user);
       },
     );
   }

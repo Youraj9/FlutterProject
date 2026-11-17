@@ -37,6 +37,8 @@ dependencies:
   crypto: ^3.0.8
   http: ^1.6.0
   flutter_secure_storage: ^11.2.0
+  geolocator: ^14.1.2
+  geocoding: ^5.0.1
 
 dev_dependencies:
   flutter_test:

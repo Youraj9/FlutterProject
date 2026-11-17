@@ -5,7 +5,9 @@ import 'package:sideproject/widgets/orderscreen/ordercard.dart';
 import 'package:sideproject/widgets/orderscreen/pastorder.dart';
 
 class OrdersScreen extends StatefulWidget {
-  const OrdersScreen({super.key});
+  const OrdersScreen({super.key, this.onBack});
+
+  final VoidCallback? onBack;
 
   @override
   State<OrdersScreen> createState() => _OrdersScreenState();
@@ -23,7 +25,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
         child: Column(
           children: [
             // Header
-            const Orderheader(),
+            Orderheader(onBack: widget.onBack),
 
             // Active and Past Orders
             Padding(

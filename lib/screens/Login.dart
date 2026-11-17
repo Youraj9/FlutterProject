@@ -40,7 +40,7 @@ class _LoginState extends State<Login> {
     });
 
     try {
-      await _authService.login(
+      final result = await _authService.login(
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
@@ -54,7 +54,7 @@ class _LoginState extends State<Login> {
         ),
       );
 
-      Navigator.pushReplacementNamed(context, '/home');
+      Navigator.pushReplacementNamed(context, '/home', arguments: result.user);
     } catch (error) {
       if (!mounted) return;
 
