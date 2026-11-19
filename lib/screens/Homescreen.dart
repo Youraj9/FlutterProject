@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:sideproject/models/restaurant_catalog.dart';
 import 'package:sideproject/models/restaurant.dart';
 import 'package:sideproject/models/auth_user.dart';
-import 'package:sideproject/screens/Resdetails.dart';
 import 'package:sideproject/services/restaurant_service.dart';
 import 'package:sideproject/widgets/location.dart';
 import 'package:sideproject/widgets/search.dart';
@@ -109,6 +109,15 @@ class _HomeScreenState extends State<HomeScreen1> {
               const PromoBanner(),
 
               const SizedBox(height: 24),
+
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: () => context.push('/sha256'),
+                  icon: const Icon(Icons.fingerprint),
+                  label: const Text('SHA-256 tool'),
+                ),
+              ),
 
               _buildRestaurantSection(),
             ],
@@ -221,13 +230,9 @@ class _HomeScreenState extends State<HomeScreen1> {
                         imageUrl: restaurant.imageUrl,
                         isOpen: restaurant.isOpen,
                         onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute<void>(
-                              builder: (context) => RestaurantDetailsScreen(
-                                restaurant: restaurant,
-                              ),
-                            ),
+                          context.push(
+                            '/restaurants/${restaurant.id}',
+                            extra: restaurant,
                           );
                         },
                       );

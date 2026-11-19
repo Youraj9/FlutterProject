@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:sideproject/utils/formvalidate.dart';
 import 'package:sideproject/services/auth_service.dart';
 
@@ -54,7 +55,7 @@ class _LoginState extends State<Login> {
         ),
       );
 
-      Navigator.pushReplacementNamed(context, '/home', arguments: result.user);
+      context.go('/home', extra: result.user);
     } catch (error) {
       if (!mounted) return;
 
@@ -339,7 +340,7 @@ class _LoginState extends State<Login> {
                             onPressed: _isLoading
                                 ? null
                                 : () {
-                                    Navigator.pushNamed(context, '/signup');
+                                    context.push('/signup');
                                   },
 
                             child: const Text(

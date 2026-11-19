@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import 'models/auth_user.dart';
+import 'models/restaurant.dart';
 import 'services/auth_service.dart';
 import 'services/token_storage.dart';
 import 'screens/Homescreen.dart';
 import 'screens/landing.dart';
 import 'screens/Login.dart';
 import 'screens/Mainpage.dart';
+import 'screens/Resdetails.dart';
+import 'screens/SHA.dart';
 import 'screens/signups.dart';
 
 import 'package:sideproject/widgets/Trailup.dart';
-
-// import 'package:sideproject/widgets/';
 
 void main() {
   runApp(const Swiggy12());
@@ -53,32 +55,48 @@ class Swiggy1 extends StatelessWidget {
 
 class Swiggy12 extends StatelessWidget {
   const Swiggy12({super.key});
+
+  static GoRouter get router => _router;
+
+  static final _router = GoRouter(
+    initialLocation: '/',
+    routes: [
+      GoRoute(path: '/', builder: (context, state) => const _SessionRestorer()),
+      GoRoute(path: '/landing', builder: (context, state) => const Landing()),
+      GoRoute(path: '/login', builder: (context, state) => const Login()),
+      GoRoute(path: '/signup', builder: (context, state) => const Signup()),
+      GoRoute(
+        path: '/home',
+        builder: (context, state) {
+          final user = state.extra;
+          return MainScreen(user: user is AuthUser ? user : null);
+        },
+      ),
+      GoRoute(path: '/sha256', builder: (context, state) => const ShaScreen()),
+      GoRoute(
+        path: '/restaurants/:restaurantId',
+        builder: (context, state) {
+          final restaurant = state.extra;
+          if (restaurant is Restaurant) {
+            return RestaurantDetailsScreen(restaurant: restaurant);
+          }
+          return RestaurantDetailsRoute(
+            restaurantId: state.pathParameters['restaurantId']!,
+          );
+        },
+      ),
+    ],
+  );
+
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build
-    return MaterialApp(
+    return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrange),
         useMaterial3: true,
       ),
-      home: const _SessionRestorer(),
-      routes: {
-        '/landing': (context) => const Landing(),
-        '/login': (context) => const Login(),
-        '/signup': (context) => const Signup(),
-      },
-      onGenerateRoute: (settings) {
-        if (settings.name == '/home') {
-          final user = settings.arguments;
-          return MaterialPageRoute<void>(
-            settings: settings,
-            builder: (context) =>
-                MainScreen(user: user is AuthUser ? user : null),
-          );
-        }
-        return null;
-      },
+      routerConfig: _router,
     );
   }
 }
@@ -93,6 +111,7 @@ class _SessionRestorer extends StatefulWidget {
 class _SessionRestorerState extends State<_SessionRestorer> {
   final _authService = AuthService();
   Future<AuthUser?>? _restoreFuture;
+  bool _didNavigate = false;
 
   @override
   void initState() {
@@ -146,7 +165,7 @@ class _SessionRestorerState extends State<_SessionRestorer> {
                     FilledButton(onPressed: _retry, child: const Text('Retry')),
                     TextButton(
                       onPressed: () {
-                        Navigator.pushReplacementNamed(context, '/login');
+                        context.go('/login');
                       },
                       child: const Text('Go to login'),
                     ),
@@ -157,9 +176,15 @@ class _SessionRestorerState extends State<_SessionRestorer> {
           );
         }
 
-        final user = snapshot.data;
-        if (user == null) return const Landing();
-        return MainScreen(user: user);
+        if (!_didNavigate) {
+          _didNavigate = true;
+          final user = snapshot.data;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            context.go(user == null ? '/landing' : '/home', extra: user);
+          });
+        }
+        return const Scaffold(body: Center(child: CircularProgressIndicator()));
       },
     );
   }
@@ -167,18 +192,16 @@ class _SessionRestorerState extends State<_SessionRestorer> {
 
 class Trailpart extends StatelessWidget {
   const Trailpart({super.key});
+
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrange),
         useMaterial3: true,
       ),
-      // home: Banner(),
       home: Banners(),
-      // home: HomeScreen1(),
     );
   }
 }

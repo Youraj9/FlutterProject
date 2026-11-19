@@ -3,24 +3,6 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 
-void main() {
-  runApp(const ShaApp());
-}
-
-class ShaApp extends StatelessWidget {
-  const ShaApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'SHA-256 example',
-      theme: ThemeData(colorSchemeSeed: Colors.deepOrange),
-      home: const ShaScreen(),
-    );
-  }
-}
-
 class ShaScreen extends StatefulWidget {
   const ShaScreen({super.key});
 

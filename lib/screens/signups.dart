@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:sideproject/services/auth_service.dart';
 import 'package:sideproject/utils/formvalidate.dart';
 
@@ -74,7 +75,7 @@ class _SignupState extends State<Signup> {
           backgroundColor: Colors.green,
         ),
       );
-      Navigator.pushReplacementNamed(context, '/home', arguments: result.user);
+      context.go('/home', extra: result.user);
     } catch (error) {
       if (!mounted) return;
 
@@ -468,10 +469,7 @@ class _SignupState extends State<Signup> {
                         TextButton(
                           onPressed: _isLoading
                               ? null
-                              : () => Navigator.pushReplacementNamed(
-                                  context,
-                                  '/login',
-                                ),
+                              : () => context.go('/login'),
 
                           child: const Text(
                             'Log in',

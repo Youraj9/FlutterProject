@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:sideproject/models/restaurant_catalog.dart';
 import 'package:sideproject/models/restaurant.dart';
-import 'package:sideproject/screens/Resdetails.dart';
 import 'package:sideproject/services/restaurant_service.dart';
 import 'package:sideproject/widgets/cuisine_filter.dart';
 import 'package:sideproject/widgets/restuarnt.dart';
@@ -182,14 +182,9 @@ class _SearchScreenState extends State<SearchScreen> {
                                       imageUrl: restaurant.imageUrl,
                                       isOpen: restaurant.isOpen,
                                       onTap: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute<void>(
-                                            builder: (context) =>
-                                                RestaurantDetailsScreen(
-                                                  restaurant: restaurant,
-                                                ),
-                                          ),
+                                        context.push(
+                                          '/restaurants/${restaurant.id}',
+                                          extra: restaurant,
                                         );
                                       },
                                     ),

@@ -21,7 +21,7 @@ class _SignupState extends State<Signup> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
+            SizedBox(
               height: 200,
               width: double.infinity,
               child: Column(

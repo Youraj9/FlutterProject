@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class Landing extends StatelessWidget {
   const Landing({super.key});
@@ -8,11 +9,11 @@ class Landing extends StatelessWidget {
   static const _background = Color(0xFFFFF8F3);
 
   void _openLogin(BuildContext context) {
-    Navigator.pushNamed(context, '/login');
+    context.push('/login');
   }
 
   void _openSignup(BuildContext context) {
-    Navigator.pushNamed(context, '/signup');
+    context.push('/signup');
   }
 
   @override

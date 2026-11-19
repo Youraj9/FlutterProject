@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:sideproject/models/order.dart';
 import 'package:sideproject/screens/Homescreen.dart';
 import 'package:sideproject/models/auth_user.dart';
@@ -39,7 +40,7 @@ class _MainScreenState extends State<MainScreen> {
     try {
       await _authService.logout();
       if (!mounted) return;
-      Navigator.pushNamedAndRemoveUntil(context, '/landing', (_) => false);
+      context.go('/landing');
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)

@@ -1,7 +1,76 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:sideproject/models/food_item.dart';
 import 'package:sideproject/models/restaurant.dart';
 import 'package:sideproject/services/restaurant_service.dart';
+
+class RestaurantDetailsRoute extends StatefulWidget {
+  const RestaurantDetailsRoute({super.key, required this.restaurantId});
+
+  final String restaurantId;
+
+  @override
+  State<RestaurantDetailsRoute> createState() => _RestaurantDetailsRouteState();
+}
+
+class _RestaurantDetailsRouteState extends State<RestaurantDetailsRoute> {
+  final _restaurantService = RestaurantService();
+  late Future<Restaurant> _restaurantFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRestaurant();
+  }
+
+  void _loadRestaurant() {
+    _restaurantFuture = _restaurantService.fetchRestaurant(widget.restaurantId);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<Restaurant>(
+      future: _restaurantFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        if (snapshot.hasError) {
+          return Scaffold(
+            appBar: AppBar(
+              leading: IconButton(
+                onPressed: () => context.pop(),
+                icon: const Icon(Icons.arrow_back),
+              ),
+              title: const Text('Restaurant'),
+            ),
+            body: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Could not load restaurant: ${snapshot.error}',
+                      textAlign: TextAlign.center,
+                    ),
+                    TextButton(
+                      onPressed: () => setState(_loadRestaurant),
+                      child: const Text('Try again'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+        return RestaurantDetailsScreen(restaurant: snapshot.data!);
+      },
+    );
+  }
+}
 
 class RestaurantDetailsScreen extends StatefulWidget {
   const RestaurantDetailsScreen({super.key, required this.restaurant});
@@ -43,7 +112,7 @@ class _RestaurantDetailsScreenState extends State<RestaurantDetailsScreen> {
                 children: [
                   IconButton(
                     tooltip: 'Back',
-                    onPressed: () => Navigator.maybePop(context),
+                    onPressed: () => context.pop(),
                     icon: const Icon(Icons.arrow_back),
                   ),
                   Expanded(
