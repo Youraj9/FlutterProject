@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sideproject/models/restaurant_catalog.dart';
 import 'package:sideproject/models/restaurant.dart';
 import 'package:sideproject/models/auth_user.dart';
 import 'package:sideproject/screens/Resdetails.dart';
@@ -6,7 +7,7 @@ import 'package:sideproject/services/restaurant_service.dart';
 import 'package:sideproject/widgets/location.dart';
 import 'package:sideproject/widgets/search.dart';
 import 'package:sideproject/widgets/foodsection.dart';
-import 'package:sideproject/widgets/foodcategor.dart';
+import 'package:sideproject/widgets/cuisine_filter.dart';
 // import 'package:flutter/material.dart';
 import 'package:sideproject/widgets/promotional.dart';
 import 'package:sideproject/widgets/restuarnt.dart';
@@ -39,18 +40,27 @@ class HomeScreen extends StatelessWidget {
 }
 
 class HomeScreen1 extends StatefulWidget {
-  const HomeScreen1({super.key, this.user, this.onLogout});
+  const HomeScreen1({
+    super.key,
+    this.user,
+    this.onLogout,
+    this.restaurantService,
+  });
 
   final AuthUser? user;
   final Future<void> Function()? onLogout;
+  final RestaurantService? restaurantService;
 
   @override
   State<HomeScreen1> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen1> {
-  final _restaurantService = RestaurantService();
-  late Future<List<Restaurant>> _restaurantsFuture;
+  late final RestaurantService _restaurantService =
+      widget.restaurantService ?? RestaurantService();
+  late Future<RestaurantCatalog> _catalogFuture;
+  String _selectedCuisine = 'All';
+  String _query = '';
 
   @override
   void initState() {
@@ -59,7 +69,7 @@ class _HomeScreenState extends State<HomeScreen1> {
   }
 
   void _loadRestaurants() {
-    _restaurantsFuture = _restaurantService.fetchRestaurants();
+    _catalogFuture = _restaurantService.fetchCatalog();
   }
 
   @override
@@ -75,11 +85,24 @@ class _HomeScreenState extends State<HomeScreen1> {
 
               const SizedBox(height: 22),
 
-              const Search(),
+              Search(
+                onChanged: (value) => setState(() => _query = value.trim()),
+              ),
 
               const SizedBox(height: 22),
 
-              const FoodCategories(),
+              FutureBuilder<RestaurantCatalog>(
+                future: _catalogFuture,
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) return const SizedBox(height: 92);
+                  return CuisineFilter(
+                    categories: snapshot.data!.categories,
+                    selectedCuisine: _selectedCuisine,
+                    onSelected: (cuisine) =>
+                        setState(() => _selectedCuisine = cuisine),
+                  );
+                },
+              ),
 
               const SizedBox(height: 20),
 
@@ -107,13 +130,8 @@ class _HomeScreenState extends State<HomeScreen1> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Top Restaurants Near You',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        FutureBuilder<List<Restaurant>>(
-          future: _restaurantsFuture,
+        FutureBuilder<RestaurantCatalog>(
+          future: _catalogFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState != ConnectionState.done) {
               return const Padding(
@@ -141,50 +159,102 @@ class _HomeScreenState extends State<HomeScreen1> {
               );
             }
 
-            final restaurants = snapshot.data ?? const <Restaurant>[];
-            if (restaurants.isEmpty) {
+            final catalog = snapshot.data!;
+            final allRestaurants = catalog.restaurants;
+            if (allRestaurants.isEmpty) {
               return const Padding(
                 padding: EdgeInsets.symmetric(vertical: 20),
                 child: Center(child: Text('No restaurants are available yet.')),
               );
             }
 
-            return ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: restaurants.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 8),
-              itemBuilder: (context, index) {
-                final restaurant = restaurants[index];
-                return RestaurantCard(
-                  name: restaurant.name,
-                  cuisines: restaurant.cuisines.isEmpty
-                      ? 'Restaurant'
-                      : restaurant.cuisines.join(' • '),
-                  rating: restaurant.rating.toStringAsFixed(1),
-                  deliveryTime: '${restaurant.deliveryTimeMinutes} min',
-                  price:
-                      '₹${restaurant.minimumOrder.toStringAsFixed(0)} min order',
-                  offer: restaurant.isOpen ? 'Open now' : 'Currently closed',
-                  foodIcon: _iconForRestaurant(restaurant),
-                  imageUrl: restaurant.imageUrl,
-                  isOpen: restaurant.isOpen,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute<void>(
-                        builder: (context) =>
-                            RestaurantDetailsScreen(restaurant: restaurant),
-                      ),
-                    );
-                  },
-                );
-              },
+            final restaurants = allRestaurants
+                .where(
+                  (restaurant) => restaurantMatchesCategory(
+                    restaurant,
+                    _selectedCuisine,
+                    catalog.categories,
+                  ),
+                )
+                .where(_matchesQuery)
+                .toList();
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _selectedCuisine == 'All'
+                      ? 'Top Restaurants Near You'
+                      : '$_selectedCuisine Restaurants',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                if (restaurants.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    child: Center(child: Text(_emptyResultsMessage)),
+                  )
+                else
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: restaurants.length,
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 8),
+                    itemBuilder: (context, index) {
+                      final restaurant = restaurants[index];
+                      return RestaurantCard(
+                        name: restaurant.name,
+                        cuisines: restaurant.cuisines.isEmpty
+                            ? 'Restaurant'
+                            : restaurant.cuisines.join(' • '),
+                        rating: restaurant.rating.toStringAsFixed(1),
+                        deliveryTime: '${restaurant.deliveryTimeMinutes} min',
+                        price:
+                            '₹${restaurant.minimumOrder.toStringAsFixed(0)} min order',
+                        offer: restaurant.isOpen
+                            ? 'Open now'
+                            : 'Currently closed',
+                        foodIcon: _iconForRestaurant(restaurant),
+                        imageUrl: restaurant.imageUrl,
+                        isOpen: restaurant.isOpen,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute<void>(
+                              builder: (context) => RestaurantDetailsScreen(
+                                restaurant: restaurant,
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+              ],
             );
           },
         ),
       ],
     );
+  }
+
+  bool _matchesQuery(Restaurant restaurant) {
+    if (_query.isEmpty) return true;
+    final searchableText = [
+      restaurant.name,
+      restaurant.description,
+      restaurant.address,
+      ...restaurant.cuisines,
+    ].join(' ').toLowerCase();
+    return searchableText.contains(_query.toLowerCase());
+  }
+
+  String get _emptyResultsMessage {
+    if (_query.isNotEmpty) return 'No restaurants match "$_query".';
+    return 'No restaurants serve $_selectedCuisine.';
   }
 
   IconData _iconForRestaurant(Restaurant restaurant) {

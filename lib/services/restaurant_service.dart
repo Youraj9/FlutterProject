@@ -5,6 +5,8 @@ import 'package:http/http.dart' as http;
 
 import '../config/api_config.dart';
 import '../models/food_item.dart';
+import '../models/restaurant_catalog.dart';
+import '../models/restaurant_category.dart';
 import '../models/restaurant.dart';
 
 class RestaurantApiException implements Exception {
@@ -20,9 +22,56 @@ class RestaurantService {
   static const Duration _timeout = Duration(seconds: 15);
 
   Future<List<Restaurant>> fetchRestaurants() async {
-    final response = await _get(Uri.parse(ApiConfig.restaurants));
+    const pageSize = 50;
+    final firstPage = await _fetchRestaurantPage(1, pageSize);
+    final pagination = firstPage['pagination'];
+    final rawTotalPages = pagination is Map ? pagination['totalPages'] : null;
+    if (rawTotalPages is! num ||
+        rawTotalPages < 0 ||
+        rawTotalPages != rawTotalPages.toInt()) {
+      throw const RestaurantApiException(
+        'The restaurant server returned invalid pagination data.',
+      );
+    }
+
+    final totalPages = rawTotalPages.toInt();
+    final restaurants = _parseList(
+      firstPage['restaurants'],
+      Restaurant.fromJson,
+    );
+    for (var page = 2; page <= totalPages; page++) {
+      final nextPage = await _fetchRestaurantPage(page, pageSize);
+      restaurants.addAll(
+        _parseList(nextPage['restaurants'], Restaurant.fromJson),
+      );
+    }
+    return restaurants;
+  }
+
+  Future<List<RestaurantCategory>> fetchCategories() async {
+    final response = await _get(
+      Uri.parse('${ApiConfig.restaurants}/categories'),
+    );
     final data = _dataMap(response);
-    return _parseList(data['restaurants'], Restaurant.fromJson);
+    return _parseList(data['categories'], RestaurantCategory.fromJson);
+  }
+
+  Future<RestaurantCatalog> fetchCatalog() async {
+    final restaurantsFuture = fetchRestaurants();
+    final categoriesFuture = fetchCategories();
+    return RestaurantCatalog(
+      restaurants: await restaurantsFuture,
+      categories: await categoriesFuture,
+    );
+  }
+
+  Future<Map<String, dynamic>> _fetchRestaurantPage(
+    int page,
+    int pageSize,
+  ) async {
+    final uri = Uri.parse(ApiConfig.restaurants)
+        .replace(queryParameters: {'page': '$page', 'limit': '$pageSize'});
+    return _dataMap(await _get(uri));
   }
 
   Future<Restaurant> fetchRestaurant(String restaurantId) async {

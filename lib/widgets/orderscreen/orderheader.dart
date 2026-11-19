@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 
 class Orderheader extends StatelessWidget {
   final VoidCallback? onBack;
+  final VoidCallback? onRefresh;
 
-  const Orderheader({super.key, this.onBack});
+  const Orderheader({super.key, this.onBack, this.onRefresh});
 
   @override
   Widget build(BuildContext context) {
@@ -44,6 +45,12 @@ class Orderheader extends StatelessWidget {
               ],
             ),
           ),
+          if (onRefresh != null)
+            IconButton(
+              tooltip: 'Refresh orders',
+              onPressed: onRefresh,
+              icon: const Icon(Icons.refresh),
+            ),
         ],
       ),
     );

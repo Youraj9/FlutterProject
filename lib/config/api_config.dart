@@ -9,5 +9,6 @@ class ApiConfig {
   static const String login = '$baseUrl/auth/login';
   static const String me = '$baseUrl/auth/me';
   static const String restaurants = '$baseUrl/restaurants';
+  static const String orders = '$baseUrl/orders';
 }
 // configuration of the data here we are doing

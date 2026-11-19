@@ -1,47 +1,5 @@
 import 'package:flutter/material.dart';
 
-class Cusinecat extends StatefulWidget {
-  const Cusinecat({super.key});
-
-  @override
-  State<Cusinecat> createState() => _CusinecatState();
-}
-
-class _CusinecatState extends State<Cusinecat> {
-  static const categories = [
-    (name: 'All', icon: Icons.restaurant, color: Color(0xFFFFE5CC)),
-    (name: 'South Indian', icon: Icons.rice_bowl, color: Color(0xFFD8F5E5)),
-    (name: 'Burgers', icon: Icons.lunch_dining, color: Color(0xFFFFEBC7)),
-    (name: 'Pizza', icon: Icons.local_pizza, color: Color(0xFFFFE5CC)),
-    (name: 'Beverages', icon: Icons.local_drink, color: Color(0xFFDCEBFF)),
-    (name: 'Desserts', icon: Icons.cake, color: Color(0xFFFFE0EF)),
-  ];
-
-  int selectedIndex = 0;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 92,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: categories.length,
-        separatorBuilder: (context, index) => const SizedBox(width: 10),
-        itemBuilder: (context, index) {
-          final category = categories[index];
-          return Customcusine(
-            name: category.name,
-            iconname: category.icon,
-            color: category.color,
-            isSelected: selectedIndex == index,
-            onTap: () => setState(() => selectedIndex = index),
-          );
-        },
-      ),
-    );
-  }
-}
-
 class Customcusine extends StatelessWidget {
   final String name;
   final IconData iconname;
@@ -61,7 +19,7 @@ class Customcusine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 76,
+      width: 112,
       child: Material(
         color: Colors.transparent,
         //what does the color here means for . and here why it has given like this
@@ -69,7 +27,7 @@ class Customcusine extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(16),
           child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 4),
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
             decoration: BoxDecoration(
               color: isSelected ? const Color(0xFFFFF5EF) : Colors.white,
               // what does it do here what do it means
@@ -82,17 +40,20 @@ class Customcusine extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 CircleAvatar(
-                  radius: 19,
+                  radius: 24,
                   backgroundColor: color,
-                  child: Icon(iconname, size: 21, color: Colors.deepOrange),
+                  child: Icon(iconname, size: 26, color: Colors.deepOrange),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Text(
                   name,
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 10),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
             ),

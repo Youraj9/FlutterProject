@@ -3,9 +3,18 @@ import 'package:flutter/material.dart';
 import 'cart_styles.dart';
 
 class CheckoutBar extends StatelessWidget {
-  const CheckoutBar({required this.payable, super.key});
+  const CheckoutBar({
+    required this.payable,
+    required this.onCheckout,
+    this.isLoading = false,
+    this.isEnabled = true,
+    super.key,
+  });
 
   final int payable;
+  final VoidCallback onCheckout;
+  final bool isLoading;
+  final bool isEnabled;
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +54,7 @@ class CheckoutBar extends StatelessWidget {
             child: SizedBox(
               height: 50,
               child: FilledButton(
-                onPressed: () {},
+                onPressed: isLoading || !isEnabled ? null : onCheckout,
                 style: FilledButton.styleFrom(
                   backgroundColor: CartStyles.accent,
                   foregroundColor: Colors.white,
@@ -53,19 +62,19 @@ class CheckoutBar extends StatelessWidget {
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Flexible(
                       child: Text(
-                        'Proceed to Checkout',
+                        isLoading ? 'Placing order...' : 'Place order',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(fontWeight: FontWeight.w700),
                       ),
                     ),
-                    SizedBox(width: 6),
-                    Icon(Icons.chevron_right),
+                    const SizedBox(width: 6),
+                    const Icon(Icons.chevron_right),
                   ],
                 ),
               ),

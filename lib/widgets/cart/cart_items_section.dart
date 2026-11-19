@@ -9,12 +9,14 @@ class CartItemsSection extends StatelessWidget {
     required this.items,
     required this.onDecrease,
     required this.onIncrease,
+    required this.onAddMore,
     super.key,
   });
 
   final List<CartItem> items;
   final ValueChanged<int> onDecrease;
   final ValueChanged<int> onIncrease;
+  final VoidCallback onAddMore;
 
   @override
   Widget build(BuildContext context) {
@@ -31,22 +33,26 @@ class CartItemsSection extends StatelessWidget {
               const Divider(height: 20, color: CartStyles.divider),
           ],
           const Divider(height: 20, color: CartStyles.divider),
-          const Row(
-            children: [
-              _AddIcon(),
-              SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'Add more items',
-                  style: TextStyle(
-                    color: CartStyles.accent,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
+          InkWell(
+            onTap: onAddMore,
+            borderRadius: BorderRadius.circular(8),
+            child: const Row(
+              children: [
+                _AddIcon(),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Add items from restaurant menus',
+                    style: TextStyle(
+                      color: CartStyles.accent,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
-              ),
-              Icon(Icons.chevron_right, color: CartStyles.accent),
-            ],
+                Icon(Icons.chevron_right, color: CartStyles.accent),
+              ],
+            ),
           ),
         ],
       ),
@@ -76,7 +82,24 @@ class _CartItemRow extends StatelessWidget {
             color: const Color(0xFFFFE8D7),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(item.icon, color: CartStyles.accent, size: 38),
+          child: item.imageUrl.isEmpty
+              ? const Icon(
+                  Icons.restaurant_menu,
+                  color: CartStyles.accent,
+                  size: 38,
+                )
+              : ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.network(
+                    item.imageUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => const Icon(
+                      Icons.restaurant_menu,
+                      color: CartStyles.accent,
+                      size: 38,
+                    ),
+                  ),
+                ),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -100,9 +123,16 @@ class _CartItemRow extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(color: CartStyles.muted, fontSize: 13),
               ),
+              const SizedBox(height: 3),
+              Text(
+                item.restaurantName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: CartStyles.muted, fontSize: 12),
+              ),
               const SizedBox(height: 8),
               Text(
-                '₹${item.price}',
+                '₹${item.price.toStringAsFixed(0)}',
                 style: const TextStyle(
                   color: CartStyles.ink,
                   fontSize: 17,
