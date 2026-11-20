@@ -2,15 +2,25 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sideproject/models/restaurant_catalog.dart';
 import 'package:sideproject/models/restaurant.dart';
+import 'package:sideproject/screens/Resdetails.dart';
+import 'package:sideproject/services/cart_store.dart';
 import 'package:sideproject/services/restaurant_service.dart';
 import 'package:sideproject/widgets/cuisine_filter.dart';
 import 'package:sideproject/widgets/restuarnt.dart';
 import 'package:sideproject/widgets/search.dart';
 
 class SearchScreen extends StatefulWidget {
-  const SearchScreen({this.onBack, this.restaurantService, super.key});
+  const SearchScreen({
+    this.onBack,
+    this.onOpenCart,
+    this.cartStore,
+    this.restaurantService,
+    super.key,
+  });
 
   final VoidCallback? onBack;
+  final VoidCallback? onOpenCart;
+  final CartStore? cartStore;
   final RestaurantService? restaurantService;
 
   @override
@@ -18,6 +28,7 @@ class SearchScreen extends StatefulWidget {
 }
 
 class _SearchScreenState extends State<SearchScreen> {
+  late final CartStore _cartStore = widget.cartStore ?? CartStore.instance;
   late final RestaurantService _restaurantService =
       widget.restaurantService ?? RestaurantService();
   late Future<RestaurantCatalog> _catalogFuture;
@@ -184,7 +195,13 @@ class _SearchScreenState extends State<SearchScreen> {
                                       onTap: () {
                                         context.push(
                                           '/restaurants/${restaurant.id}',
-                                          extra: restaurant,
+                                          extra: RestaurantDetailsNavigation(
+                                            restaurant: restaurant,
+                                            cartStore: _cartStore,
+                                            onOpenCart: widget.onOpenCart,
+                                            restaurantService:
+                                                _restaurantService,
+                                          ),
                                         );
                                       },
                                     ),

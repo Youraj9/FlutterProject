@@ -2,19 +2,44 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sideproject/models/food_item.dart';
 import 'package:sideproject/models/restaurant.dart';
+import 'package:sideproject/services/cart_store.dart';
 import 'package:sideproject/services/restaurant_service.dart';
 
+class RestaurantDetailsNavigation {
+  const RestaurantDetailsNavigation({
+    required this.restaurant,
+    required this.cartStore,
+    this.onOpenCart,
+    this.restaurantService,
+  });
+
+  final Restaurant restaurant;
+  final CartStore cartStore;
+  final VoidCallback? onOpenCart;
+  final RestaurantService? restaurantService;
+}
+
 class RestaurantDetailsRoute extends StatefulWidget {
-  const RestaurantDetailsRoute({super.key, required this.restaurantId});
+  const RestaurantDetailsRoute({
+    super.key,
+    required this.restaurantId,
+    this.cartStore,
+    this.onOpenCart,
+    this.restaurantService,
+  });
 
   final String restaurantId;
+  final CartStore? cartStore;
+  final VoidCallback? onOpenCart;
+  final RestaurantService? restaurantService;
 
   @override
   State<RestaurantDetailsRoute> createState() => _RestaurantDetailsRouteState();
 }
 
 class _RestaurantDetailsRouteState extends State<RestaurantDetailsRoute> {
-  final _restaurantService = RestaurantService();
+  late final RestaurantService _restaurantService =
+      widget.restaurantService ?? RestaurantService();
   late Future<Restaurant> _restaurantFuture;
 
   @override
@@ -66,16 +91,30 @@ class _RestaurantDetailsRouteState extends State<RestaurantDetailsRoute> {
             ),
           );
         }
-        return RestaurantDetailsScreen(restaurant: snapshot.data!);
+        return RestaurantDetailsScreen(
+          restaurant: snapshot.data!,
+          cartStore: widget.cartStore,
+          onOpenCart: widget.onOpenCart,
+          restaurantService: widget.restaurantService,
+        );
       },
     );
   }
 }
 
 class RestaurantDetailsScreen extends StatefulWidget {
-  const RestaurantDetailsScreen({super.key, required this.restaurant});
+  const RestaurantDetailsScreen({
+    super.key,
+    required this.restaurant,
+    this.cartStore,
+    this.onOpenCart,
+    this.restaurantService,
+  });
 
   final Restaurant restaurant;
+  final CartStore? cartStore;
+  final VoidCallback? onOpenCart;
+  final RestaurantService? restaurantService;
 
   @override
   State<RestaurantDetailsScreen> createState() =>
@@ -83,7 +122,9 @@ class RestaurantDetailsScreen extends StatefulWidget {
 }
 
 class _RestaurantDetailsScreenState extends State<RestaurantDetailsScreen> {
-  final _restaurantService = RestaurantService();
+  late final RestaurantService _restaurantService =
+      widget.restaurantService ?? RestaurantService();
+  late final CartStore _cartStore = widget.cartStore ?? CartStore.instance;
   late Future<List<FoodItem>> _menuFuture;
 
   @override
@@ -94,6 +135,22 @@ class _RestaurantDetailsScreenState extends State<RestaurantDetailsScreen> {
 
   void _loadMenu() {
     _menuFuture = _restaurantService.fetchMenu(widget.restaurant.id);
+  }
+
+  void _selectFood(FoodItem food) {
+    if (!_cartStore.addFoodItem(widget.restaurant, food)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Place an order from one restaurant at a time.'),
+        ),
+      );
+      return;
+    }
+
+    widget.onOpenCart?.call();
+    if (widget.onOpenCart == null) {
+      context.go('/home?tab=cart');
+    }
   }
 
   @override
@@ -262,6 +319,7 @@ class _RestaurantDetailsScreenState extends State<RestaurantDetailsScreen> {
                                 ),
                             ],
                           ),
+                          onTap: () => _selectFood(food),
                         ),
                       );
                     },

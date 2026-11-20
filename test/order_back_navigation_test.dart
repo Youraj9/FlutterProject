@@ -76,12 +76,43 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Top Restaurants Near You'), findsOneWidget);
   });
+
+  testWidgets('an eligible order can be cancelled and refreshed', (
+    tester,
+  ) async {
+    final orderService = _TestOrderService([
+      _order('cancel-order', 'placed', 'Mongo Kitchen'),
+    ]);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MainScreen(
+          orderService: orderService,
+          restaurantService: _TestRestaurantService(),
+        ),
+      ),
+    );
+    await tester.tap(find.byType(NavigationDestination).at(3));
+    await tester.pumpAndSettle();
+    expect(find.text('Cancel order'), findsOneWidget);
+
+    await tester.tap(find.text('Cancel order'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cancel order').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('No active orders yet.'), findsOneWidget);
+    await tester.tap(find.text('Past Orders'));
+    await tester.pumpAndSettle();
+    expect(find.text('Cancelled'), findsOneWidget);
+    expect(find.text('Cancel order'), findsNothing);
+  });
 }
 
 Order _order(String id, String status, String restaurantName) => Order(
   id: id,
   orderName: '$restaurantName order',
   restaurantName: restaurantName,
+  deliveryAddress: 'Koramangala, Bengaluru',
   items: const [
     OrderItem(
       foodItemId: 'food-1',
@@ -109,6 +140,7 @@ class _TestOrderService extends OrderService {
   @override
   Future<Order> createOrder({
     required String restaurantId,
+    required String deliveryAddress,
     required List<OrderItemRequest> items,
   }) async {
     final order = _order(
@@ -118,6 +150,25 @@ class _TestOrderService extends OrderService {
     );
     orders.insert(0, order);
     return order;
+  }
+
+  @override
+  Future<Order> cancelOrder(String orderId) async {
+    final index = orders.indexWhere((order) => order.id == orderId);
+    final order = orders[index];
+    final cancelled = Order(
+      id: order.id,
+      orderName: order.orderName,
+      restaurantName: order.restaurantName,
+      deliveryAddress: order.deliveryAddress,
+      items: order.items,
+      total: order.total,
+      status: 'cancelled',
+      orderedAt: order.orderedAt,
+      estimatedDeliveryAt: order.estimatedDeliveryAt,
+    );
+    orders[index] = cancelled;
+    return cancelled;
   }
 }
 

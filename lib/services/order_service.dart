@@ -54,6 +54,7 @@ class OrderService {
 
   Future<Order> createOrder({
     required String restaurantId,
+    required String deliveryAddress,
     required List<OrderItemRequest> items,
   }) async {
     final response = await _request(
@@ -62,10 +63,25 @@ class OrderService {
         headers: headers,
         body: jsonEncode({
           'restaurantId': restaurantId,
+          'deliveryAddress': deliveryAddress,
           'items': items.map((item) => item.toJson()).toList(),
         }),
       ),
       jsonBody: true,
+    );
+    final order = _dataMap(response)['order'];
+    if (order is! Map) {
+      throw const OrderApiException('The server returned an invalid order.');
+    }
+    return Order.fromJson(Map<String, dynamic>.from(order));
+  }
+
+  Future<Order> cancelOrder(String orderId) async {
+    final response = await _request(
+      (headers) => http.patch(
+        Uri.parse('${ApiConfig.orders}/$orderId/cancel'),
+        headers: headers,
+      ),
     );
     final order = _dataMap(response)['order'];
     if (order is! Map) {

@@ -4,6 +4,7 @@ import 'package:sideproject/models/order.dart';
 import 'package:sideproject/screens/Homescreen.dart';
 import 'package:sideproject/models/auth_user.dart';
 import 'package:sideproject/services/auth_service.dart';
+import 'package:sideproject/services/cart_store.dart';
 import 'package:sideproject/services/order_service.dart';
 import 'package:sideproject/services/restaurant_service.dart';
 
@@ -17,11 +18,15 @@ class MainScreen extends StatefulWidget {
   const MainScreen({
     super.key,
     this.user,
+    this.initialTab = 0,
+    this.cartStore,
     this.orderService,
     this.restaurantService,
   });
 
   final AuthUser? user;
+  final int initialTab;
+  final CartStore? cartStore;
   final OrderService? orderService;
   final RestaurantService? restaurantService;
 
@@ -30,8 +35,9 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  int selectedIndex = 0;
+  late int selectedIndex = widget.initialTab;
   int _ordersVersion = 0;
+  late final CartStore _cartStore = widget.cartStore ?? CartStore.instance;
   final List<Widget?> _pages = List<Widget?>.filled(4, null);
 
   final _authService = AuthService();
@@ -40,6 +46,7 @@ class _MainScreenState extends State<MainScreen> {
     try {
       await _authService.logout();
       if (!mounted) return;
+      _cartStore.clear();
       context.go('/landing');
     } catch (error) {
       if (!mounted) return;
@@ -83,12 +90,16 @@ class _MainScreenState extends State<MainScreen> {
         page = HomeScreen1(
           user: widget.user,
           onLogout: _logout,
+          onOpenCart: _openCart,
+          cartStore: _cartStore,
           restaurantService: widget.restaurantService,
         );
         break;
       case 1:
         page = SearchScreen(
           onBack: _showHome,
+          onOpenCart: _openCart,
+          cartStore: _cartStore,
           restaurantService: widget.restaurantService,
         );
         break;
@@ -96,6 +107,7 @@ class _MainScreenState extends State<MainScreen> {
         page = Cardscreen1(
           onBack: _showHome,
           onOrderPlaced: _showPlacedOrder,
+          cartStore: _cartStore,
           orderService: widget.orderService,
           restaurantService: widget.restaurantService,
         );
@@ -119,6 +131,12 @@ class _MainScreenState extends State<MainScreen> {
     setState(() {
       selectedIndex = 0;
     });
+  }
+
+  void _openCart() {
+    if (!mounted) return;
+    setState(() => selectedIndex = 2);
+    context.pop();
   }
 
   void _showPlacedOrder(Order _) {

@@ -3,6 +3,7 @@ class Order {
     required this.id,
     required this.orderName,
     required this.restaurantName,
+    required this.deliveryAddress,
     required this.items,
     required this.total,
     required this.status,
@@ -13,6 +14,7 @@ class Order {
   final String id;
   final String orderName;
   final String restaurantName;
+  final String deliveryAddress;
   final List<OrderItem> items;
   final double total;
   final String status;
@@ -25,6 +27,8 @@ class Order {
     'preparing',
     'out_for_delivery',
   }.contains(status);
+
+  bool get isCancellable => const {'placed', 'confirmed'}.contains(status);
 
   factory Order.fromJson(Map<String, dynamic> json) {
     final rawItems = json['items'];
@@ -56,6 +60,9 @@ class Order {
       id: _requiredString(json, const ['id', '_id']),
       orderName: _requiredString(json, const ['orderName']),
       restaurantName: _requiredString(json, const ['restaurantName']),
+      deliveryAddress: json['deliveryAddress'] is String
+          ? json['deliveryAddress'] as String
+          : '',
       items: rawItems.map((item) {
         if (item is! Map) {
           throw const FormatException('Order contains an invalid item.');

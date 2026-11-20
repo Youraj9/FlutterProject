@@ -10,7 +10,6 @@ import 'screens/landing.dart';
 import 'screens/Login.dart';
 import 'screens/Mainpage.dart';
 import 'screens/Resdetails.dart';
-import 'screens/SHA.dart';
 import 'screens/signups.dart';
 
 import 'package:sideproject/widgets/Trailup.dart';
@@ -69,16 +68,26 @@ class Swiggy12 extends StatelessWidget {
         path: '/home',
         builder: (context, state) {
           final user = state.extra;
-          return MainScreen(user: user is AuthUser ? user : null);
+          return MainScreen(
+            user: user is AuthUser ? user : null,
+            initialTab: state.uri.queryParameters['tab'] == 'cart' ? 2 : 0,
+          );
         },
       ),
-      GoRoute(path: '/sha256', builder: (context, state) => const ShaScreen()),
       GoRoute(
         path: '/restaurants/:restaurantId',
         builder: (context, state) {
-          final restaurant = state.extra;
-          if (restaurant is Restaurant) {
-            return RestaurantDetailsScreen(restaurant: restaurant);
+          final navigation = state.extra;
+          if (navigation is RestaurantDetailsNavigation) {
+            return RestaurantDetailsScreen(
+              restaurant: navigation.restaurant,
+              cartStore: navigation.cartStore,
+              onOpenCart: navigation.onOpenCart,
+              restaurantService: navigation.restaurantService,
+            );
+          }
+          if (navigation is Restaurant) {
+            return RestaurantDetailsScreen(restaurant: navigation);
           }
           return RestaurantDetailsRoute(
             restaurantId: state.pathParameters['restaurantId']!,

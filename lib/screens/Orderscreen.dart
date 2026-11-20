@@ -18,6 +18,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   late final OrderService _orderService = widget.orderService ?? OrderService();
   late Future<List<Order>> _ordersFuture;
   int _selectedTab = 0;
+  String? _cancellingOrderId;
 
   @override
   void initState() {
@@ -99,8 +100,16 @@ class _OrdersScreenState extends State<OrdersScreen> {
                     itemCount: filteredOrders.length,
                     separatorBuilder: (context, index) =>
                         const SizedBox(height: 12),
-                    itemBuilder: (context, index) =>
-                        OrderListCard(order: filteredOrders[index]),
+                    itemBuilder: (context, index) {
+                      final order = filteredOrders[index];
+                      return OrderListCard(
+                        order: order,
+                        isCancelling: _cancellingOrderId == order.id,
+                        onCancel: order.isCancellable
+                            ? () => _confirmCancel(order)
+                            : null,
+                      );
+                    },
                   );
                 },
               ),
@@ -109,6 +118,47 @@ class _OrdersScreenState extends State<OrdersScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _confirmCancel(Order order) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cancel this order?'),
+        content: const Text(
+          'You can cancel an order only before preparation begins.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Keep order'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Cancel order'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _cancellingOrderId = order.id);
+    try {
+      await _orderService.cancelOrder(order.id);
+      if (!mounted) return;
+      setState(() {
+        _cancellingOrderId = null;
+        _loadOrders();
+      });
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Order cancelled.')));
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _cancellingOrderId = null);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Could not cancel order: $error')));
+    }
   }
 
   Widget _orderTab({required String label, required int index}) {

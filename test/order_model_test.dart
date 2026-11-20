@@ -9,6 +9,7 @@ void main() {
         'id': 'order-1',
         'orderName': 'Database Cafe order',
         'restaurantName': 'Database Cafe',
+        'deliveryAddress': 'Koramangala, Bengaluru',
         'items': [
           {
             'foodItemId': 'food-1',
@@ -25,6 +26,7 @@ void main() {
       });
 
       expect(order.orderName, 'Database Cafe order');
+      expect(order.deliveryAddress, 'Koramangala, Bengaluru');
       expect(order.items.single.quantity, 2);
       expect(order.total, 255);
       expect(order.isActive, isTrue);
@@ -47,5 +49,29 @@ void main() {
 
     expect(delivered.isActive, isFalse);
     expect(cancelled.isActive, isFalse);
+  });
+
+  test('only placed and confirmed orders can be cancelled', () {
+    final baseOrder = {
+      'id': 'order-1',
+      'orderName': 'Database Cafe order',
+      'restaurantName': 'Database Cafe',
+      'items': <Object>[],
+      'total': 0,
+      'orderedAt': '2026-11-18T10:05:00.000Z',
+    };
+
+    expect(
+      Order.fromJson({...baseOrder, 'status': 'placed'}).isCancellable,
+      isTrue,
+    );
+    expect(
+      Order.fromJson({...baseOrder, 'status': 'confirmed'}).isCancellable,
+      isTrue,
+    );
+    expect(
+      Order.fromJson({...baseOrder, 'status': 'preparing'}).isCancellable,
+      isFalse,
+    );
   });
 }

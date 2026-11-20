@@ -2,9 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:sideproject/models/order.dart';
 
 class OrderListCard extends StatelessWidget {
-  const OrderListCard({required this.order, super.key});
+  const OrderListCard({
+    required this.order,
+    this.onCancel,
+    this.isCancelling = false,
+    super.key,
+  });
 
   final Order order;
+  final VoidCallback? onCancel;
+  final bool isCancelling;
 
   @override
   Widget build(BuildContext context) {
@@ -95,6 +102,15 @@ class OrderListCard extends StatelessWidget {
             'Ordered ${_formatDateTime(order.orderedAt)}',
             style: const TextStyle(color: Colors.grey, fontSize: 12),
           ),
+          if (order.deliveryAddress.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              'Delivering to ${order.deliveryAddress}',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: Colors.grey, fontSize: 12),
+            ),
+          ],
           if (order.isActive && order.estimatedDeliveryAt != null) ...[
             const SizedBox(height: 6),
             Text(
@@ -125,6 +141,22 @@ class OrderListCard extends StatelessWidget {
               ),
             ],
           ),
+          if (order.isCancellable && onCancel != null) ...[
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: isCancelling ? null : onCancel,
+                child: isCancelling
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Cancel order'),
+              ),
+            ),
+          ],
         ],
       ),
     );

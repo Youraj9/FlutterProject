@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:sideproject/models/food_item.dart';
 import 'package:sideproject/models/order.dart';
 import 'package:sideproject/models/restaurant.dart';
+import 'package:sideproject/services/cart_store.dart';
+import 'package:sideproject/services/delivery_location_store.dart';
 import 'package:sideproject/services/order_service.dart';
 import 'package:sideproject/services/restaurant_service.dart';
 import 'package:sideproject/widgets/cart/bill_details_section.dart';
@@ -17,6 +19,7 @@ class CartScreen extends StatelessWidget {
   const CartScreen({
     this.onBack,
     this.onOrderPlaced,
+    this.cartStore,
     this.orderService,
     this.restaurantService,
     super.key,
@@ -24,6 +27,7 @@ class CartScreen extends StatelessWidget {
 
   final VoidCallback? onBack;
   final ValueChanged<Order>? onOrderPlaced;
+  final CartStore? cartStore;
   final OrderService? orderService;
   final RestaurantService? restaurantService;
 
@@ -31,6 +35,7 @@ class CartScreen extends StatelessWidget {
   Widget build(BuildContext context) => Cardscreen1(
     onBack: onBack,
     onOrderPlaced: onOrderPlaced,
+    cartStore: cartStore,
     orderService: orderService,
     restaurantService: restaurantService,
   );
@@ -40,6 +45,7 @@ class Cardscreen1 extends StatefulWidget {
   const Cardscreen1({
     this.onBack,
     this.onOrderPlaced,
+    this.cartStore,
     this.orderService,
     this.restaurantService,
     super.key,
@@ -47,6 +53,7 @@ class Cardscreen1 extends StatefulWidget {
 
   final VoidCallback? onBack;
   final ValueChanged<Order>? onOrderPlaced;
+  final CartStore? cartStore;
   final OrderService? orderService;
   final RestaurantService? restaurantService;
 
@@ -58,22 +65,25 @@ class _Cardscreen1State extends State<Cardscreen1> {
   late final RestaurantService _restaurantService =
       widget.restaurantService ?? RestaurantService();
   late final OrderService _orderService = widget.orderService ?? OrderService();
-  final List<CartItem> _items = [];
+  late final CartStore _cartStore = widget.cartStore ?? CartStore.instance;
   late Future<List<_AvailableFood>> _availableFoodsFuture;
   bool _isSubmitting = false;
 
-  int get _itemsTotal => _items.fold(
+  int _itemsTotal(List<CartItem> items) => items.fold(
     0,
     (total, item) => total + (item.price * item.quantity).round(),
   );
 
-  int get _itemCount => _items.fold(0, (total, item) => total + item.quantity);
+  int _itemCount(List<CartItem> items) =>
+      items.fold(0, (total, item) => total + item.quantity);
 
-  int get _deliveryFee => _items.isEmpty ? 0 : _items.first.deliveryFee.round();
+  int _deliveryFee(List<CartItem> items) =>
+      items.isEmpty ? 0 : items.first.deliveryFee.round();
 
-  int get _platformFee => _items.isEmpty ? 0 : 5;
+  int _platformFee(List<CartItem> items) => items.isEmpty ? 0 : 5;
 
-  int get _payable => _itemsTotal + _deliveryFee + _platformFee;
+  int _payable(List<CartItem> items) =>
+      _itemsTotal(items) + _deliveryFee(items) + _platformFee(items);
 
   @override
   void initState() {
@@ -115,20 +125,11 @@ class _Cardscreen1State extends State<Cardscreen1> {
   }
 
   void _updateQuantity(int index, int change) {
-    final item = _items[index];
-    final quantity = item.quantity + change;
-    setState(() {
-      if (quantity < 1) {
-        _items.removeAt(index);
-      } else {
-        _items[index] = item.copyWith(quantity: quantity);
-      }
-    });
+    _cartStore.updateQuantity(index, change);
   }
 
   bool _addFood(_AvailableFood availableFood) {
-    if (_items.isNotEmpty &&
-        _items.first.restaurantId != availableFood.restaurant.id) {
+    if (!_cartStore.addFoodItem(availableFood.restaurant, availableFood.food)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Place an order from one restaurant at a time.'),
@@ -136,48 +137,20 @@ class _Cardscreen1State extends State<Cardscreen1> {
       );
       return false;
     }
-
-    final existingIndex = _items.indexWhere(
-      (item) =>
-          item.id == availableFood.food.id &&
-          item.restaurantId == availableFood.restaurant.id,
-    );
-    setState(() {
-      if (existingIndex >= 0) {
-        _items[existingIndex] = _items[existingIndex].copyWith(
-          quantity: _items[existingIndex].quantity + 1,
-        );
-      } else {
-        final food = availableFood.food;
-        _items.add(
-          CartItem(
-            id: food.id,
-            restaurantId: availableFood.restaurant.id,
-            restaurantName: availableFood.restaurant.name,
-            deliveryFee: availableFood.restaurant.deliveryFee,
-            name: food.name,
-            description: food.description.isEmpty
-                ? food.category
-                : food.category.isEmpty
-                ? food.description
-                : '${food.category} • ${food.description}',
-            price: food.price,
-            imageUrl: food.imageUrl,
-          ),
-        );
-      }
-    });
     return true;
   }
 
   Future<void> _submitOrder() async {
-    if (_items.isEmpty || _isSubmitting) return;
+    final items = _cartStore.items;
+    if (items.isEmpty || _isSubmitting) return;
 
     setState(() => _isSubmitting = true);
     try {
       final order = await _orderService.createOrder(
-        restaurantId: _items.first.restaurantId,
-        items: _items
+        restaurantId: items.first.restaurantId,
+        deliveryAddress:
+            DeliveryLocationStore.instance.selected.value.formattedAddress,
+        items: items
             .map(
               (item) => OrderItemRequest(
                 foodItemId: item.id,
@@ -188,10 +161,8 @@ class _Cardscreen1State extends State<Cardscreen1> {
       );
       if (!mounted) return;
 
-      setState(() {
-        _items.clear();
-        _isSubmitting = false;
-      });
+      _cartStore.clear();
+      setState(() => _isSubmitting = false);
       if (widget.onOrderPlaced != null) {
         widget.onOrderPlaced!(order);
       } else {
@@ -310,55 +281,61 @@ class _Cardscreen1State extends State<Cardscreen1> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFFFF8F3),
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 740),
-            child: Column(
-              children: [
-                CartHeader(onBack: _goBack),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                    child: Column(
-                      children: [
-                        RestaurantSection(items: _items),
-                        const SizedBox(height: 14),
-                        CartItemsSection(
-                          items: _items,
-                          onDecrease: (index) => _updateQuantity(index, -1),
-                          onIncrease: (index) => _updateQuantity(index, 1),
-                          onAddMore: _showAvailableFoods,
+    return AnimatedBuilder(
+      animation: _cartStore,
+      builder: (context, child) {
+        final items = _cartStore.items;
+        return Scaffold(
+          backgroundColor: const Color(0xFFFFF8F3),
+          body: SafeArea(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 740),
+                child: Column(
+                  children: [
+                    CartHeader(onBack: _goBack),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                        child: Column(
+                          children: [
+                            RestaurantSection(items: items),
+                            const SizedBox(height: 14),
+                            CartItemsSection(
+                              items: items,
+                              onDecrease: (index) => _updateQuantity(index, -1),
+                              onIncrease: (index) => _updateQuantity(index, 1),
+                              onAddMore: _showAvailableFoods,
+                            ),
+                            const SizedBox(height: 14),
+                            const CouponSection(),
+                            const SizedBox(height: 14),
+                            BillDetailsSection(
+                              itemCount: _itemCount(items),
+                              itemsTotal: _itemsTotal(items),
+                              deliveryFee: _deliveryFee(items),
+                              platformFee: _platformFee(items),
+                              discount: 0,
+                            ),
+                            const SizedBox(height: 14),
+                            const DeliveryAddressSection(),
+                          ],
                         ),
-                        const SizedBox(height: 14),
-                        const CouponSection(),
-                        const SizedBox(height: 14),
-                        BillDetailsSection(
-                          itemCount: _itemCount,
-                          itemsTotal: _itemsTotal,
-                          deliveryFee: _deliveryFee,
-                          platformFee: _platformFee,
-                          discount: 0,
-                        ),
-                        const SizedBox(height: 14),
-                        const DeliveryAddressSection(),
-                      ],
+                      ),
                     ),
-                  ),
+                    CheckoutBar(
+                      payable: _payable(items),
+                      onCheckout: _submitOrder,
+                      isLoading: _isSubmitting,
+                      isEnabled: items.isNotEmpty,
+                    ),
+                  ],
                 ),
-                CheckoutBar(
-                  payable: _payable,
-                  onCheckout: _submitOrder,
-                  isLoading: _isSubmitting,
-                  isEnabled: _items.isNotEmpty,
-                ),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

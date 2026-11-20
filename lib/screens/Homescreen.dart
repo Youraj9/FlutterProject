@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:sideproject/models/restaurant_catalog.dart';
 import 'package:sideproject/models/restaurant.dart';
 import 'package:sideproject/models/auth_user.dart';
+import 'package:sideproject/screens/Resdetails.dart';
+import 'package:sideproject/services/cart_store.dart';
 import 'package:sideproject/services/restaurant_service.dart';
 import 'package:sideproject/widgets/location.dart';
 import 'package:sideproject/widgets/search.dart';
@@ -44,11 +46,15 @@ class HomeScreen1 extends StatefulWidget {
     super.key,
     this.user,
     this.onLogout,
+    this.onOpenCart,
+    this.cartStore,
     this.restaurantService,
   });
 
   final AuthUser? user;
   final Future<void> Function()? onLogout;
+  final VoidCallback? onOpenCart;
+  final CartStore? cartStore;
   final RestaurantService? restaurantService;
 
   @override
@@ -56,6 +62,7 @@ class HomeScreen1 extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen1> {
+  late final CartStore _cartStore = widget.cartStore ?? CartStore.instance;
   late final RestaurantService _restaurantService =
       widget.restaurantService ?? RestaurantService();
   late Future<RestaurantCatalog> _catalogFuture;
@@ -109,15 +116,6 @@ class _HomeScreenState extends State<HomeScreen1> {
               const PromoBanner(),
 
               const SizedBox(height: 24),
-
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton.icon(
-                  onPressed: () => context.push('/sha256'),
-                  icon: const Icon(Icons.fingerprint),
-                  label: const Text('SHA-256 tool'),
-                ),
-              ),
 
               _buildRestaurantSection(),
             ],
@@ -232,7 +230,12 @@ class _HomeScreenState extends State<HomeScreen1> {
                         onTap: () {
                           context.push(
                             '/restaurants/${restaurant.id}',
-                            extra: restaurant,
+                            extra: RestaurantDetailsNavigation(
+                              restaurant: restaurant,
+                              cartStore: _cartStore,
+                              onOpenCart: widget.onOpenCart,
+                              restaurantService: _restaurantService,
+                            ),
                           );
                         },
                       );
