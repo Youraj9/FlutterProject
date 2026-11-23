@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:go_router/go_router.dart';
 
 import 'models/auth_user.dart';
@@ -35,6 +36,7 @@ Future<void> _logout(BuildContext context) async {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  usePathUrlStrategy();
   await CartStore.instance.initialize();
   runApp(const Swiggy12());
   // runApp(const Trailpart());

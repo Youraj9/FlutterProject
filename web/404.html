@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <script>
     const path = window.location.pathname
-      .replace('/FlutterProject', '')
+      .replace(/^\/FlutterProject/, '')
       .replace(/\/$/, '');
     const search = window.location.search;
     window.location.replace(
