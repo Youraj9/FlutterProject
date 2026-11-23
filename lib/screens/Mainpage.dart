@@ -15,10 +15,20 @@ class MainScreen extends StatelessWidget {
       bottomNavigationBar: BottomNavBar(
         selectedIndex: navigationShell.currentIndex,
         onItemSelected: (index) {
-          navigationShell.goBranch(
-            index,
-            initialLocation: index == navigationShell.currentIndex,
-          );
+          switch (index) {
+            case 0:
+              context.go('/home');
+              break;
+            case 1:
+              context.go('/search');
+              break;
+            case 2:
+              context.go('/cart');
+              break;
+            case 3:
+              context.go('/orders');
+              break;
+          }
         },
       ),
     );
