@@ -1,43 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:go_router/go_router.dart';
 import 'package:sideproject/models/food_item.dart';
 import 'package:sideproject/models/restaurant.dart';
 import 'package:sideproject/models/restaurant_catalog.dart';
 import 'package:sideproject/models/restaurant_category.dart';
-import 'package:sideproject/screens/Mainpage.dart';
-import 'package:sideproject/screens/Resdetails.dart';
 import 'package:sideproject/services/cart_store.dart';
 import 'package:sideproject/services/restaurant_service.dart';
+
+import 'helpers/test_app_router.dart';
 
 void main() {
   testWidgets('selecting a menu item opens the shared cart', (tester) async {
     final cartStore = CartStore();
     final restaurantService = _TestRestaurantService();
-    late final GoRouter router;
-    router = GoRouter(
-      initialLocation: '/home',
-      routes: [
-        GoRoute(
-          path: '/home',
-          builder: (context, state) => MainScreen(
-            cartStore: cartStore,
-            restaurantService: restaurantService,
-          ),
-        ),
-        GoRoute(
-          path: '/restaurants/:restaurantId',
-          builder: (context, state) {
-            final navigation = state.extra! as RestaurantDetailsNavigation;
-            return RestaurantDetailsScreen(
-              restaurant: navigation.restaurant,
-              cartStore: navigation.cartStore,
-              onOpenCart: navigation.onOpenCart,
-              restaurantService: navigation.restaurantService,
-            );
-          },
-        ),
-      ],
+    final router = createTestAppRouter(
+      cartStore: cartStore,
+      restaurantService: restaurantService,
     );
     addTearDown(router.dispose);
 

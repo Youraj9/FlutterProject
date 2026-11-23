@@ -4,28 +4,30 @@ import 'package:sideproject/models/food_item.dart';
 import 'package:sideproject/models/order.dart';
 import 'package:sideproject/models/restaurant.dart';
 import 'package:sideproject/models/restaurant_category.dart';
-import 'package:sideproject/screens/Mainpage.dart';
+import 'package:sideproject/services/cart_store.dart';
 import 'package:sideproject/services/order_service.dart';
 import 'package:sideproject/services/restaurant_service.dart';
+
+import 'helpers/test_app_router.dart';
 
 void main() {
   testWidgets('orders are loaded, filtered by tab, and return home', (
     tester,
   ) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        home: MainScreen(
-          orderService: _TestOrderService([
-            _order('active-order', 'preparing', 'Mongo Kitchen'),
-            _order('past-order', 'delivered', 'Past Kitchen'),
-          ]),
-          restaurantService: _TestRestaurantService(),
-        ),
-      ),
+    final router = createTestAppRouter(
+      orderService: _TestOrderService([
+        _order('active-order', 'preparing', 'Mongo Kitchen'),
+        _order('past-order', 'delivered', 'Past Kitchen'),
+      ]),
+      restaurantService: _TestRestaurantService(),
     );
+    addTearDown(router.dispose);
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpAndSettle();
 
     await tester.tap(find.byIcon(Icons.receipt_long_outlined));
     await tester.pumpAndSettle();
+    expect(router.routeInformationProvider.value.uri.path, '/orders');
     expect(find.text('Mongo Kitchen order'), findsOneWidget);
     expect(find.textContaining('Ordered 18 Nov 2026'), findsOneWidget);
     expect(find.text('Past Kitchen order'), findsNothing);
@@ -44,18 +46,18 @@ void main() {
     tester,
   ) async {
     final orderService = _TestOrderService();
-    await tester.pumpWidget(
-      MaterialApp(
-        home: MainScreen(
-          orderService: orderService,
-          restaurantService: _TestRestaurantService(),
-        ),
-      ),
+    final router = createTestAppRouter(
+      cartStore: CartStore(),
+      orderService: orderService,
+      restaurantService: _TestRestaurantService(),
     );
+    addTearDown(router.dispose);
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
     await tester.pumpAndSettle();
 
     await tester.tap(find.byType(NavigationDestination).at(2));
     await tester.pumpAndSettle();
+    expect(router.routeInformationProvider.value.uri.path, '/cart');
     await tester.tap(find.text('Add items from restaurant menus'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Database Meal'));
@@ -70,6 +72,7 @@ void main() {
     await tester.tap(find.text('Place order'));
     await tester.pumpAndSettle();
     expect(find.text('Database Cafe order'), findsOneWidget);
+    expect(router.routeInformationProvider.value.uri.path, '/orders');
     expect(orderService.orders, hasLength(1));
 
     await tester.tap(find.byIcon(Icons.arrow_back));
@@ -83,14 +86,12 @@ void main() {
     final orderService = _TestOrderService([
       _order('cancel-order', 'placed', 'Mongo Kitchen'),
     ]);
-    await tester.pumpWidget(
-      MaterialApp(
-        home: MainScreen(
-          orderService: orderService,
-          restaurantService: _TestRestaurantService(),
-        ),
-      ),
+    final router = createTestAppRouter(
+      orderService: orderService,
+      restaurantService: _TestRestaurantService(),
     );
+    addTearDown(router.dispose);
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
     await tester.tap(find.byType(NavigationDestination).at(3));
     await tester.pumpAndSettle();
     expect(find.text('Cancel order'), findsOneWidget);

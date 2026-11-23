@@ -149,7 +149,7 @@ class _RestaurantDetailsScreenState extends State<RestaurantDetailsScreen> {
 
     widget.onOpenCart?.call();
     if (widget.onOpenCart == null) {
-      context.go('/home?tab=cart');
+      context.go('/cart');
     }
   }
 

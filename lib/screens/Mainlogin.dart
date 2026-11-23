@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sideproject/models/auth_user.dart';
-import 'package:sideproject/screens/Mainpage.dart';
+import 'package:sideproject/screens/Homescreen.dart';
 import 'package:sideproject/screens/landing.dart';
 import 'package:sideproject/services/auth_service.dart';
 import 'package:sideproject/utils/formvalidate.dart';
@@ -14,7 +14,7 @@ void main() {
         '/landing': (context) => const Landing(),
         '/home': (context) {
           final user = ModalRoute.of(context)?.settings.arguments;
-          return MainScreen(user: user is AuthUser ? user : null);
+          return HomeScreen1(user: user is AuthUser ? user : null);
         },
       },
     ),

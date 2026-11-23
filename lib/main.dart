@@ -4,15 +4,34 @@ import 'package:go_router/go_router.dart';
 import 'models/auth_user.dart';
 import 'models/restaurant.dart';
 import 'services/auth_service.dart';
+import 'services/cart_store.dart';
+import 'services/order_refresh_store.dart';
 import 'services/token_storage.dart';
 import 'screens/Homescreen.dart';
 import 'screens/landing.dart';
 import 'screens/Login.dart';
 import 'screens/Mainpage.dart';
+import 'screens/Orderscreen.dart';
 import 'screens/Resdetails.dart';
+import 'screens/Searchscreen.dart';
+import 'screens/cardscreen.dart';
 import 'screens/signups.dart';
+import 'theme/app_theme.dart';
 
 import 'package:sideproject/widgets/Trailup.dart';
+
+Future<void> _logout(BuildContext context) async {
+  try {
+    await AuthService().logout();
+    if (!context.mounted) return;
+    CartStore.instance.clear();
+    context.go('/landing');
+  } catch (error) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text('Could not log out: $error')));
+  }
+}
 
 void main() {
   runApp(const Swiggy12());
@@ -27,10 +46,7 @@ class Swiggy extends StatelessWidget {
     // TODO: implement build
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrange),
-        useMaterial3: true,
-      ),
+      theme: AppTheme.light,
       home: HomeScreen(),
     );
   }
@@ -43,10 +59,7 @@ class Swiggy1 extends StatelessWidget {
     // TODO: implement build
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrange),
-        useMaterial3: true,
-      ),
+      theme: AppTheme.light,
       home: HomeScreen1(),
     );
   }
@@ -64,15 +77,63 @@ class Swiggy12 extends StatelessWidget {
       GoRoute(path: '/landing', builder: (context, state) => const Landing()),
       GoRoute(path: '/login', builder: (context, state) => const Login()),
       GoRoute(path: '/signup', builder: (context, state) => const Signup()),
-      GoRoute(
-        path: '/home',
-        builder: (context, state) {
-          final user = state.extra;
-          return MainScreen(
-            user: user is AuthUser ? user : null,
-            initialTab: state.uri.queryParameters['tab'] == 'cart' ? 2 : 0,
-          );
-        },
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) =>
+            MainScreen(navigationShell: navigationShell),
+        branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/home',
+                builder: (context, state) {
+                  final user = state.extra;
+                  return HomeScreen1(
+                    user: user is AuthUser ? user : null,
+                    onLogout: () => _logout(context),
+                    onOpenCart: () => context.go('/cart'),
+                    cartStore: CartStore.instance,
+                  );
+                },
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/search',
+                builder: (context, state) => SearchScreen(
+                  onBack: () => context.go('/home'),
+                  onOpenCart: () => context.go('/cart'),
+                  cartStore: CartStore.instance,
+                ),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/cart',
+                builder: (context, state) => Cardscreen1(
+                  onBack: () => context.go('/home'),
+                  onOrderPlaced: (_) {
+                    OrderRefreshStore.instance.refresh();
+                    context.go('/orders');
+                  },
+                  cartStore: CartStore.instance,
+                ),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/orders',
+                builder: (context, state) =>
+                    OrdersScreen(onBack: () => context.go('/home')),
+              ),
+            ],
+          ),
+        ],
       ),
       GoRoute(
         path: '/restaurants/:restaurantId',
@@ -101,10 +162,7 @@ class Swiggy12 extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrange),
-        useMaterial3: true,
-      ),
+      theme: AppTheme.light,
       routerConfig: _router,
     );
   }
@@ -206,10 +264,7 @@ class Trailpart extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrange),
-        useMaterial3: true,
-      ),
+      theme: AppTheme.light,
       home: Banners(),
     );
   }
@@ -223,24 +278,22 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: .fromSeed(seedColor: Colors.deepPurple),
-      ),
+      theme: AppTheme.light,
+      // This is the theme of your application.
+      //
+      // TRY THIS: Try running your application with "flutter run". You'll see
+      // the application has a purple toolbar. Then, without quitting the app,
+      // try changing the seedColor in the colorScheme below to Colors.green
+      // and then invoke "hot reload" (save your changes or press the "hot
+      // reload" button in a Flutter-supported IDE, or press "r" if you used
+      // the command line to start the app).
+      //
+      // Notice that the counter didn't reset back to zero; the application
+      // state is not lost during the reload. To reset the state, use hot
+      // restart instead.
+      //
+      // This works for code too, not just values: Most code changes can be
+      // tested with just a hot reload.
       home: const MyHomePage(title: 'Flutter Demo Home Page'),
     );
   }

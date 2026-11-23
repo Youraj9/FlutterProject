@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sideproject/models/order.dart';
 import 'package:sideproject/services/order_service.dart';
+import 'package:sideproject/services/order_refresh_store.dart';
 import 'package:sideproject/widgets/orderscreen/order_list_card.dart';
 import 'package:sideproject/widgets/orderscreen/orderheader.dart';
 
@@ -19,11 +20,27 @@ class _OrdersScreenState extends State<OrdersScreen> {
   late Future<List<Order>> _ordersFuture;
   int _selectedTab = 0;
   String? _cancellingOrderId;
+  final _orderRefreshStore = OrderRefreshStore.instance;
+  late int _lastOrderRefreshVersion;
 
   @override
   void initState() {
     super.initState();
+    _lastOrderRefreshVersion = _orderRefreshStore.version.value;
+    _orderRefreshStore.version.addListener(_handleOrderRefresh);
     _loadOrders();
+  }
+
+  @override
+  void dispose() {
+    _orderRefreshStore.version.removeListener(_handleOrderRefresh);
+    super.dispose();
+  }
+
+  void _handleOrderRefresh() {
+    if (_lastOrderRefreshVersion == _orderRefreshStore.version.value) return;
+    _lastOrderRefreshVersion = _orderRefreshStore.version.value;
+    if (mounted) _refreshOrders();
   }
 
   void _loadOrders() {
