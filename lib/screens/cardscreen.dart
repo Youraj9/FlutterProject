@@ -128,14 +128,33 @@ class _Cardscreen1State extends State<Cardscreen1> {
     _cartStore.updateQuantity(index, change);
   }
 
-  bool _addFood(_AvailableFood availableFood) {
+  Future<bool> _addFood(_AvailableFood availableFood) async {
     if (!_cartStore.addFoodItem(availableFood.restaurant, availableFood.food)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Place an order from one restaurant at a time.'),
+      final shouldReplace = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Replace cart items?'),
+          content: Text(
+            'Your cart contains items from another restaurant. '
+            'Replace them with items from ${availableFood.restaurant.name}?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Keep cart'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Replace'),
+            ),
+          ],
         ),
       );
-      return false;
+      if (shouldReplace != true || !mounted) return false;
+      await _cartStore.replaceCartWith(
+        availableFood.restaurant,
+        availableFood.food,
+      );
     }
     return true;
   }
@@ -264,9 +283,11 @@ class _Cardscreen1State extends State<Cardscreen1> {
                       trailing: Text(
                         '₹${availableFood.food.price.toStringAsFixed(0)}',
                       ),
-                      onTap: () {
-                        if (_addFood(availableFood)) {
-                          Navigator.pop(sheetContext);
+                      onTap: () async {
+                        if (await _addFood(availableFood)) {
+                          if (sheetContext.mounted) {
+                            Navigator.pop(sheetContext);
+                          }
                         }
                       },
                     ),

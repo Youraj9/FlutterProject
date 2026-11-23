@@ -21,6 +21,33 @@ class CartItem {
   final String imageUrl;
   final int quantity;
 
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'restaurantId': restaurantId,
+    'restaurantName': restaurantName,
+    'deliveryFee': deliveryFee,
+    'name': name,
+    'description': description,
+    'price': price,
+    'imageUrl': imageUrl,
+    'quantity': quantity,
+  };
+
+  factory CartItem.fromJson(Map<String, dynamic> json) {
+    final quantity = json['quantity'];
+    return CartItem(
+      id: json['id']?.toString() ?? '',
+      restaurantId: json['restaurantId']?.toString() ?? '',
+      restaurantName: json['restaurantName']?.toString() ?? '',
+      deliveryFee: (json['deliveryFee'] as num?)?.toDouble() ?? 0,
+      name: json['name']?.toString() ?? '',
+      description: json['description']?.toString() ?? '',
+      price: (json['price'] as num?)?.toDouble() ?? 0,
+      imageUrl: json['imageUrl']?.toString() ?? '',
+      quantity: quantity is num && quantity >= 1 ? quantity.toInt() : 1,
+    );
+  }
+
   CartItem copyWith({int? quantity}) {
     return CartItem(
       id: id,

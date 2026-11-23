@@ -33,7 +33,9 @@ Future<void> _logout(BuildContext context) async {
   }
 }
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await CartStore.instance.initialize();
   runApp(const Swiggy12());
   // runApp(const Trailpart());
   // runApp(const  )

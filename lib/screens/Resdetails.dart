@@ -137,18 +137,34 @@ class _RestaurantDetailsScreenState extends State<RestaurantDetailsScreen> {
     _menuFuture = _restaurantService.fetchMenu(widget.restaurant.id);
   }
 
-  void _selectFood(FoodItem food) {
+  Future<void> _selectFood(FoodItem food) async {
     if (!_cartStore.addFoodItem(widget.restaurant, food)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Place an order from one restaurant at a time.'),
+      final shouldReplace = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Replace cart items?'),
+          content: Text(
+            'Your cart contains items from another restaurant. '
+            'Replace them with items from ${widget.restaurant.name}?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Keep cart'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Replace'),
+            ),
+          ],
         ),
       );
-      return;
+      if (shouldReplace != true || !mounted) return;
+      await _cartStore.replaceCartWith(widget.restaurant, food);
     }
 
     widget.onOpenCart?.call();
-    if (widget.onOpenCart == null) {
+    if (widget.onOpenCart == null && mounted) {
       context.go('/cart');
     }
   }
