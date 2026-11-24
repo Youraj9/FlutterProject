@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sideproject/services/auth_service.dart';
+import 'package:sideproject/services/auth_state.dart';
 import 'package:sideproject/utils/formvalidate.dart';
 
 void main() {
@@ -68,6 +69,7 @@ class _SignupState extends State<Signup> {
       );
 
       if (!mounted) return;
+      AuthStateNotifier.instance.setAuthenticated(result.user);
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

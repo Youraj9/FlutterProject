@@ -1,13 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:go_router/go_router.dart';
 
+import 'services/auth_state.dart';
 import 'models/auth_user.dart';
 import 'models/restaurant.dart';
-import 'services/auth_service.dart';
 import 'services/cart_store.dart';
 import 'services/order_refresh_store.dart';
-import 'services/token_storage.dart';
 import 'screens/Homescreen.dart';
 import 'screens/landing.dart';
 import 'screens/Login.dart';
@@ -23,7 +24,7 @@ import 'package:sideproject/widgets/Trailup.dart';
 
 Future<void> _logout(BuildContext context) async {
   try {
-    await AuthService().logout();
+    await AuthStateNotifier.instance.logout();
     if (!context.mounted) return;
     CartStore.instance.clear();
     context.go('/landing');
@@ -38,6 +39,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   usePathUrlStrategy();
   await CartStore.instance.initialize();
+  unawaited(AuthStateNotifier.instance.restoreSession());
   runApp(const Swiggy12());
   // runApp(const Trailpart());
   // runApp(const  )
@@ -76,6 +78,36 @@ class Swiggy12 extends StatelessWidget {
 
   static final _router = GoRouter(
     initialLocation: '/',
+    refreshListenable: AuthStateNotifier.instance,
+    redirect: (context, state) {
+      final auth = AuthStateNotifier.instance;
+      final location = state.matchedLocation;
+      const publicRoutes = {'/landing', '/login', '/signup'};
+
+      if (location == '/' && (auth.isLoading || auth.restoreError != null)) {
+        return null;
+      }
+
+      if (auth.isLoading) {
+        return publicRoutes.contains(location) || location == '/'
+            ? null
+            : '/login';
+      }
+
+      if (location == '/') {
+        return auth.isLoggedIn ? '/home' : '/landing';
+      }
+
+      if (!auth.isLoggedIn && !publicRoutes.contains(location)) {
+        return '/login';
+      }
+
+      if (auth.isLoggedIn && (location == '/login' || location == '/signup')) {
+        return '/home';
+      }
+
+      return null;
+    },
     routes: [
       GoRoute(path: '/', builder: (context, state) => const _SessionRestorer()),
       GoRoute(path: '/landing', builder: (context, state) => const Landing()),
@@ -90,7 +122,7 @@ class Swiggy12 extends StatelessWidget {
               GoRoute(
                 path: '/home',
                 builder: (context, state) {
-                  final user = state.extra;
+                  final user = AuthStateNotifier.instance.user ?? state.extra;
                   return HomeScreen1(
                     user: user is AuthUser ? user : null,
                     onLogout: () => _logout(context),
@@ -180,46 +212,13 @@ class _SessionRestorer extends StatefulWidget {
 }
 
 class _SessionRestorerState extends State<_SessionRestorer> {
-  final _authService = AuthService();
-  Future<AuthUser?>? _restoreFuture;
-  bool _didNavigate = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _restoreFuture = _restoreSession();
-  }
-
-  Future<AuthUser?> _restoreSession() async {
-    final token = await TokenStorage.getToken();
-    if (token == null || token.isEmpty) return null;
-    try {
-      return await _authService.getCurrentUser();
-    } on AuthException {
-      final savedToken = await TokenStorage.getToken();
-      if (savedToken == null || savedToken.isEmpty) return null;
-      rethrow;
-    }
-  }
-
-  void _retry() {
-    setState(() {
-      _restoreFuture = _restoreSession();
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<AuthUser?>(
-      future: _restoreFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState != ConnectionState.done) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
-
-        if (snapshot.hasError) {
+    return AnimatedBuilder(
+      animation: AuthStateNotifier.instance,
+      builder: (context, _) {
+        final auth = AuthStateNotifier.instance;
+        if (auth.restoreError != null) {
           return Scaffold(
             body: Center(
               child: Padding(
@@ -233,7 +232,10 @@ class _SessionRestorerState extends State<_SessionRestorer> {
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 16),
-                    FilledButton(onPressed: _retry, child: const Text('Retry')),
+                    FilledButton(
+                      onPressed: auth.restoreSession,
+                      child: const Text('Retry'),
+                    ),
                     TextButton(
                       onPressed: () {
                         context.go('/login');
@@ -245,15 +247,6 @@ class _SessionRestorerState extends State<_SessionRestorer> {
               ),
             ),
           );
-        }
-
-        if (!_didNavigate) {
-          _didNavigate = true;
-          final user = snapshot.data;
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (!mounted) return;
-            context.go(user == null ? '/landing' : '/home', extra: user);
-          });
         }
         return const Scaffold(body: Center(child: CircularProgressIndicator()));
       },

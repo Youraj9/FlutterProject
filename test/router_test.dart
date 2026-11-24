@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sideproject/main.dart';
+import 'package:sideproject/models/auth_user.dart';
 import 'package:sideproject/models/restaurant_catalog.dart';
 import 'package:sideproject/models/restaurant_category.dart';
 import 'package:sideproject/models/restaurant.dart';
@@ -8,6 +9,7 @@ import 'package:sideproject/models/food_item.dart';
 import 'package:sideproject/models/order.dart';
 import 'package:sideproject/services/order_service.dart';
 import 'package:sideproject/services/restaurant_service.dart';
+import 'package:sideproject/services/auth_state.dart';
 
 import 'helpers/test_app_router.dart';
 
@@ -41,6 +43,13 @@ void main() {
   testWidgets('GoRouter supports a restaurant ID path parameter', (
     tester,
   ) async {
+    AuthStateNotifier.instance.setAuthenticated(
+      const AuthUser(
+        id: 'user-1',
+        name: 'Test User',
+        email: 'test@example.com',
+      ),
+    );
     final router = Swiggy12.router;
     router.go(
       '/restaurants/restaurant-123',
@@ -67,6 +76,25 @@ void main() {
       '/restaurants/restaurant-123',
     );
     expect(find.text('Dynamic Route Cafe'), findsOneWidget);
+  });
+
+  testWidgets('private routes redirect logged-out users to login', (
+    tester,
+  ) async {
+    final auth = AuthStateNotifier.instance;
+    auth.setUnauthenticated();
+    final router = Swiggy12.router;
+
+    router.go('/cart');
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpAndSettle();
+
+    expect(router.routeInformationProvider.value.uri.path, '/login');
+    expect(find.byType(Scaffold), findsOneWidget);
+
+    router.go('/signup');
+    await tester.pumpAndSettle();
+    expect(router.routeInformationProvider.value.uri.path, '/signup');
   });
 }
 

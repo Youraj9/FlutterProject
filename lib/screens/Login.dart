@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sideproject/utils/formvalidate.dart';
 import 'package:sideproject/services/auth_service.dart';
+import 'package:sideproject/services/auth_state.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -47,6 +48,7 @@ class _LoginState extends State<Login> {
       );
 
       if (!mounted) return;
+      AuthStateNotifier.instance.setAuthenticated(result.user);
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
