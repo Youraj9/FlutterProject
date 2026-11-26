@@ -20,8 +20,6 @@ import 'screens/cardscreen.dart';
 import 'screens/signups.dart';
 import 'theme/app_theme.dart';
 
-import 'package:sideproject/widgets/Trailup.dart';
-
 Future<void> _logout(BuildContext context) async {
   try {
     await AuthStateNotifier.instance.logout();
@@ -90,32 +88,6 @@ String? authRouterRedirect(AuthStateNotifier auth, GoRouterState state) {
   }
 
   return null;
-}
-
-class Swiggy extends StatelessWidget {
-  const Swiggy({super.key});
-  @override
-  Widget build(BuildContext context) {
-    // TODO: implement build
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.light,
-      home: HomeScreen(),
-    );
-  }
-}
-
-class Swiggy1 extends StatelessWidget {
-  const Swiggy1({super.key});
-  @override
-  Widget build(BuildContext context) {
-    // TODO: implement build
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.light,
-      home: HomeScreen1(),
-    );
-  }
 }
 
 class Swiggy12 extends StatelessWidget {
@@ -219,6 +191,8 @@ class Swiggy12 extends StatelessWidget {
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: ThemeMode.light,
       routerConfig: _router,
     );
   }
@@ -270,19 +244,6 @@ class _SessionRestorerState extends State<_SessionRestorer> {
         }
         return const Scaffold(body: Center(child: CircularProgressIndicator()));
       },
-    );
-  }
-}
-
-class Trailpart extends StatelessWidget {
-  const Trailpart({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.light,
-      home: Banners(),
     );
   }
 }

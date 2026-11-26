@@ -4,6 +4,7 @@ import 'package:sideproject/models/food_item.dart';
 import 'package:sideproject/models/restaurant.dart';
 import 'package:sideproject/services/cart_store.dart';
 import 'package:sideproject/services/restaurant_service.dart';
+import 'package:sideproject/widgets/skeleton.dart';
 
 class RestaurantDetailsNavigation {
   const RestaurantDetailsNavigation({
@@ -250,7 +251,26 @@ class _RestaurantDetailsScreenState extends State<RestaurantDetailsScreen> {
                 future: _menuFuture,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState != ConnectionState.done) {
-                    return const Center(child: CircularProgressIndicator());
+                    return ListView.builder(
+                      itemCount: 5,
+                      itemBuilder: (context, index) => Card(
+                        child: ListTile(
+                          leading: const Skeleton(
+                            width: 52,
+                            height: 52,
+                            borderRadius: 8,
+                          ),
+                          title: SkeletonText(lines: 2, lineHeight: 12),
+                          trailing: const Center(
+                            child: SizedBox(
+                              width: 40,
+                              height: 12,
+                              child: Skeleton(height: 12),
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
                   }
                   if (snapshot.hasError) {
                     return Center(

@@ -43,12 +43,16 @@ class _OrdersScreenState extends State<OrdersScreen> {
     if (mounted) _refreshOrders();
   }
 
-  void _loadOrders() {
+  Future<void> _loadOrders() async {
     _ordersFuture = _orderService.fetchMyOrders();
+    await _ordersFuture;
   }
 
-  void _refreshOrders() {
-    setState(_loadOrders);
+  Future<void> _refreshOrders() async {
+    setState(() {
+      _ordersFuture = _orderService.fetchMyOrders();
+    });
+    await _ordersFuture;
   }
 
   @override
@@ -112,21 +116,24 @@ class _OrdersScreenState extends State<OrdersScreen> {
                     );
                   }
 
-                  return ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                    itemCount: filteredOrders.length,
-                    separatorBuilder: (context, index) =>
-                        const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      final order = filteredOrders[index];
-                      return OrderListCard(
-                        order: order,
-                        isCancelling: _cancellingOrderId == order.id,
-                        onCancel: order.isCancellable
-                            ? () => _confirmCancel(order)
-                            : null,
-                      );
-                    },
+                  return RefreshIndicator(
+                    onRefresh: _refreshOrders,
+                    child: ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                      itemCount: filteredOrders.length,
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final order = filteredOrders[index];
+                        return OrderListCard(
+                          order: order,
+                          isCancelling: _cancellingOrderId == order.id,
+                          onCancel: order.isCancellable
+                              ? () => _confirmCancel(order)
+                              : null,
+                        );
+                      },
+                    ),
                   );
                 },
               ),

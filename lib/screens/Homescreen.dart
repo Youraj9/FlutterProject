@@ -13,6 +13,7 @@ import 'package:sideproject/widgets/cuisine_filter.dart';
 // import 'package:flutter/material.dart';
 import 'package:sideproject/widgets/promotional.dart';
 import 'package:sideproject/widgets/restuarnt.dart';
+import 'package:sideproject/widgets/skeleton.dart';
 
 // import 'package:sideproject/widgets/bottomna.dart';
 
@@ -79,6 +80,13 @@ class _HomeScreenState extends State<HomeScreen1> {
     _catalogFuture = _restaurantService.fetchCatalog();
   }
 
+  Future<void> _refreshRestaurants() async {
+    setState(() {
+      _catalogFuture = _restaurantService.fetchCatalog();
+    });
+    await _catalogFuture;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -141,9 +149,24 @@ class _HomeScreenState extends State<HomeScreen1> {
           future: _catalogFuture,
           builder: (context, snapshot) {
             if (snapshot.connectionState != ConnectionState.done) {
-              return const Padding(
-                padding: EdgeInsets.all(24),
-                child: Center(child: CircularProgressIndicator()),
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _selectedCuisine == 'All'
+                        ? 'Top Restaurants Near You'
+                        : '$_selectedCuisine Restaurants',
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  for (var index = 0; index < 4; index++) ...[
+                    const RestaurantCardSkeleton(),
+                    const SizedBox(height: 8),
+                  ],
+                ],
               );
             }
 
@@ -204,42 +227,45 @@ class _HomeScreenState extends State<HomeScreen1> {
                     child: Center(child: Text(_emptyResultsMessage)),
                   )
                 else
-                  ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: restaurants.length,
-                    separatorBuilder: (context, index) =>
-                        const SizedBox(height: 8),
-                    itemBuilder: (context, index) {
-                      final restaurant = restaurants[index];
-                      return RestaurantCard(
-                        name: restaurant.name,
-                        cuisines: restaurant.cuisines.isEmpty
-                            ? 'Restaurant'
-                            : restaurant.cuisines.join(' • '),
-                        rating: restaurant.rating.toStringAsFixed(1),
-                        deliveryTime: '${restaurant.deliveryTimeMinutes} min',
-                        price:
-                            '₹${restaurant.minimumOrder.toStringAsFixed(0)} min order',
-                        offer: restaurant.isOpen
-                            ? 'Open now'
-                            : 'Currently closed',
-                        foodIcon: _iconForRestaurant(restaurant),
-                        imageUrl: restaurant.imageUrl,
-                        isOpen: restaurant.isOpen,
-                        onTap: () {
-                          context.push(
-                            '/restaurants/${restaurant.id}',
-                            extra: RestaurantDetailsNavigation(
-                              restaurant: restaurant,
-                              cartStore: _cartStore,
-                              onOpenCart: widget.onOpenCart,
-                              restaurantService: _restaurantService,
-                            ),
-                          );
-                        },
-                      );
-                    },
+                  RefreshIndicator(
+                    onRefresh: _refreshRestaurants,
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      itemCount: restaurants.length,
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 8),
+                      itemBuilder: (context, index) {
+                        final restaurant = restaurants[index];
+                        return RestaurantCard(
+                          name: restaurant.name,
+                          cuisines: restaurant.cuisines.isEmpty
+                              ? 'Restaurant'
+                              : restaurant.cuisines.join(' • '),
+                          rating: restaurant.rating.toStringAsFixed(1),
+                          deliveryTime: '${restaurant.deliveryTimeMinutes} min',
+                          price:
+                              '₹${restaurant.minimumOrder.toStringAsFixed(0)} min order',
+                          offer: restaurant.isOpen
+                              ? 'Open now'
+                              : 'Currently closed',
+                          foodIcon: _iconForRestaurant(restaurant),
+                          imageUrl: restaurant.imageUrl,
+                          isOpen: restaurant.isOpen,
+                          onTap: () {
+                            context.push(
+                              '/restaurants/${restaurant.id}',
+                              extra: RestaurantDetailsNavigation(
+                                restaurant: restaurant,
+                                cartStore: _cartStore,
+                                onOpenCart: widget.onOpenCart,
+                                restaurantService: _restaurantService,
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
                   ),
               ],
             );
