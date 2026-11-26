@@ -45,6 +45,53 @@ Future<void> main() async {
   // runApp(const  )
 }
 
+String? authenticatedDestination(String? destination) {
+  if (destination == null ||
+      !destination.startsWith('/') ||
+      destination.startsWith('//')) {
+    return null;
+  }
+
+  final uri = Uri.tryParse(destination);
+  if (uri == null || uri.hasScheme || uri.hasAuthority) return null;
+  return uri.toString();
+}
+
+String? authRouterRedirect(AuthStateNotifier auth, GoRouterState state) {
+  final location = state.matchedLocation;
+  const publicRoutes = {'/landing', '/login', '/signup'};
+  final destination = authenticatedDestination(
+    state.uri.queryParameters['from'],
+  );
+
+  if (location == '/' && (auth.isLoading || auth.restoreError != null)) {
+    return null;
+  }
+
+  if (auth.isLoading) {
+    if (publicRoutes.contains(location) || location == '/') return null;
+    return '/?from=${Uri.encodeQueryComponent(state.uri.toString())}';
+  }
+
+  if (location == '/') {
+    if (auth.isLoggedIn) return destination ?? '/home';
+    if (destination != null) {
+      return '/login?from=${Uri.encodeQueryComponent(destination)}';
+    }
+    return '/landing';
+  }
+
+  if (!auth.isLoggedIn && !publicRoutes.contains(location)) {
+    return '/login?from=${Uri.encodeQueryComponent(state.uri.toString())}';
+  }
+
+  if (auth.isLoggedIn && (location == '/login' || location == '/signup')) {
+    return destination ?? '/home';
+  }
+
+  return null;
+}
+
 class Swiggy extends StatelessWidget {
   const Swiggy({super.key});
   @override
@@ -79,35 +126,8 @@ class Swiggy12 extends StatelessWidget {
   static final _router = GoRouter(
     initialLocation: '/',
     refreshListenable: AuthStateNotifier.instance,
-    redirect: (context, state) {
-      final auth = AuthStateNotifier.instance;
-      final location = state.matchedLocation;
-      const publicRoutes = {'/landing', '/login', '/signup'};
-
-      if (location == '/' && (auth.isLoading || auth.restoreError != null)) {
-        return null;
-      }
-
-      if (auth.isLoading) {
-        return publicRoutes.contains(location) || location == '/'
-            ? null
-            : '/login';
-      }
-
-      if (location == '/') {
-        return auth.isLoggedIn ? '/home' : '/landing';
-      }
-
-      if (!auth.isLoggedIn && !publicRoutes.contains(location)) {
-        return '/login';
-      }
-
-      if (auth.isLoggedIn && (location == '/login' || location == '/signup')) {
-        return '/home';
-      }
-
-      return null;
-    },
+    redirect: (context, state) =>
+        authRouterRedirect(AuthStateNotifier.instance, state),
     routes: [
       GoRoute(path: '/', builder: (context, state) => const _SessionRestorer()),
       GoRoute(path: '/landing', builder: (context, state) => const Landing()),

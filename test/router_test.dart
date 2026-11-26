@@ -10,6 +10,7 @@ import 'package:sideproject/models/order.dart';
 import 'package:sideproject/services/order_service.dart';
 import 'package:sideproject/services/restaurant_service.dart';
 import 'package:sideproject/services/auth_state.dart';
+import 'package:go_router/go_router.dart';
 
 import 'helpers/test_app_router.dart';
 
@@ -95,6 +96,61 @@ void main() {
     router.go('/signup');
     await tester.pumpAndSettle();
     expect(router.routeInformationProvider.value.uri.path, '/signup');
+  });
+
+  testWidgets('direct route survives session restoration and login', (
+    tester,
+  ) async {
+    final auth = AuthStateNotifier();
+    final router = GoRouter(
+      initialLocation: '/search',
+      refreshListenable: auth,
+      redirect: (context, state) => authRouterRedirect(auth, state),
+      routes: [
+        for (final path in [
+          '/',
+          '/landing',
+          '/login',
+          '/signup',
+          '/home',
+          '/search',
+          '/cart',
+          '/orders',
+        ])
+          GoRoute(
+            path: path,
+            builder: (context, state) => Scaffold(body: Text(path)),
+          ),
+      ],
+    );
+    addTearDown(router.dispose);
+    addTearDown(auth.dispose);
+
+    await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+    await tester.pumpAndSettle();
+    expect(router.routeInformationProvider.value.uri.path, '/');
+    expect(
+      router.routeInformationProvider.value.uri.queryParameters['from'],
+      '/search',
+    );
+
+    auth.setUnauthenticated();
+    await tester.pumpAndSettle();
+    expect(router.routeInformationProvider.value.uri.path, '/login');
+    expect(
+      router.routeInformationProvider.value.uri.queryParameters['from'],
+      '/search',
+    );
+
+    auth.setAuthenticated(
+      const AuthUser(
+        id: 'user-1',
+        name: 'Test User',
+        email: 'test@example.com',
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(router.routeInformationProvider.value.uri.path, '/search');
   });
 }
 

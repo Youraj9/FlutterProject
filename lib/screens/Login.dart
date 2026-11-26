@@ -48,6 +48,9 @@ class _LoginState extends State<Login> {
       );
 
       if (!mounted) return;
+      final destination = authenticatedDestination(
+        GoRouterState.of(context).uri.queryParameters['from'],
+      );
       AuthStateNotifier.instance.setAuthenticated(result.user);
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -57,7 +60,7 @@ class _LoginState extends State<Login> {
         ),
       );
 
-      context.go('/home', extra: result.user);
+      context.go(destination ?? '/home', extra: result.user);
     } catch (error) {
       if (!mounted) return;
 

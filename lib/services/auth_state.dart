@@ -4,6 +4,18 @@ import '../models/auth_user.dart';
 import 'auth_service.dart';
 import 'token_storage.dart';
 
+String? authenticatedDestination(String? destination) {
+  if (destination == null ||
+      !destination.startsWith('/') ||
+      destination.startsWith('//')) {
+    return null;
+  }
+
+  final uri = Uri.tryParse(destination);
+  if (uri == null || uri.hasScheme || uri.hasAuthority) return null;
+  return uri.toString();
+}
+
 class AuthStateNotifier extends ChangeNotifier {
   AuthStateNotifier({AuthService? authService})
     : _authService = authService ?? AuthService();
